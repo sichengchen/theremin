@@ -252,10 +252,8 @@ export function ControlPanel({
           <div id="more-settings" className="more-content" data-open={moreOpen ? "true" : undefined} aria-hidden={!moreOpen}>
             <div className="more-content-inner">
               <SwitchRow
-                label="Hands"
-                value={handsSwapped ? "Right vol / Left pitch" : "Left vol / Right pitch"}
+                label="Reverse hands"
                 checked={handsSwapped}
-                ariaLabel="Swap volume and pitch hands"
                 onCheckedChange={(swapped) =>
                   onSettingsChange({
                     ...settings,
@@ -316,17 +314,13 @@ export function ControlPanel({
 
 function SwitchRow({
   label,
-  value,
   checked,
   disabled,
-  ariaLabel,
   onCheckedChange,
 }: {
   label: string;
-  value?: string;
   checked: boolean;
   disabled?: boolean;
-  ariaLabel?: string;
   onCheckedChange: (checked: boolean) => void;
 }) {
   const id = `control-${label.toLowerCase().replaceAll(" ", "-")}`;
@@ -335,8 +329,7 @@ function SwitchRow({
     <div className="switch-row" data-disabled={disabled ? "true" : undefined}>
       <Label htmlFor={id}>{label}</Label>
       <div className="switch-row-control">
-        {value ? <span className="switch-row-value">{value}</span> : null}
-        <Switch id={id} aria-label={ariaLabel} checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
+        <Switch id={id} checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
       </div>
     </div>
   );

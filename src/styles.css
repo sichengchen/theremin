@@ -366,16 +366,6 @@ button:not(:disabled) {
   gap: 10px;
 }
 
-.switch-row-value {
-  min-width: 0;
-  color: var(--liquid-glass-text);
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.2;
-  text-align: right;
-  white-space: nowrap;
-}
-
 .meter-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
