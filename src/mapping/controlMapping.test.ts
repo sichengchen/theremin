@@ -40,6 +40,17 @@ describe("control mapping", () => {
     expect(control.gain).toBe(0);
   });
 
+  it("still tracks the volume hand when pitch is missing", () => {
+    const quiet = mapHandsToControls([handAt(0.2, 0.85, "Left")]);
+    const loud = mapHandsToControls([handAt(0.2, 0.05, "Left")]);
+
+    expect(quiet.gate).toBe(false);
+    expect(quiet.gain).toBe(0);
+    expect(loud.gate).toBe(false);
+    expect(loud.gain).toBe(0);
+    expect(loud.volume01).toBeGreaterThan(quiet.volume01);
+  });
+
   it("smooths transitions from a previous control state", () => {
     const low = handAt(0.52, 0.5, "Right");
     const volume = handAt(0.2, 0.05, "Left");

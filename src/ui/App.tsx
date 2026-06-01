@@ -16,14 +16,14 @@ import { renderOverlay } from "./OverlayCanvas";
 interface LiveMetrics {
   handCount: number;
   frequency: number;
-  gain: number;
+  volume: number;
   confidence: number;
 }
 
 const INITIAL_METRICS: LiveMetrics = {
   handCount: 0,
   frequency: DEFAULT_MAPPING_SETTINGS.minFrequency,
-  gain: 0,
+  volume: 0,
   confidence: 0,
 };
 
@@ -188,7 +188,7 @@ export function App() {
             setMetrics({
               handCount: frame.hands.length,
               frequency: control.frequency,
-              gain: control.gain,
+              volume: control.volume01,
               confidence: control.confidence,
             });
           }
@@ -241,7 +241,7 @@ export function App() {
           waveform={waveform}
           handCount={metrics.handCount}
           frequency={metrics.frequency}
-          gain={metrics.gain}
+          volume={metrics.volume}
           confidence={metrics.confidence}
           onCameraChange={setCameraEnabled}
           onAudioChange={setAudioEnabled}

@@ -20,7 +20,7 @@ export interface ControlPanelProps {
   waveform: Waveform;
   handCount: number;
   frequency: number;
-  gain: number;
+  volume: number;
   confidence: number;
   onCameraChange: (enabled: boolean) => void;
   onAudioChange: (enabled: boolean) => void;
@@ -38,7 +38,7 @@ export function ControlPanel({
   waveform,
   handCount,
   frequency,
-  gain,
+  volume,
   confidence,
   onCameraChange,
   onAudioChange,
@@ -66,7 +66,7 @@ export function ControlPanel({
 
         <section className="meter-grid" aria-label="Live meters">
           <Meter label="Pitch" value={formatFrequency(frequency)} ratio={frequencyRatio(frequency, settings)} />
-          <Meter label="Volume" value={`${Math.round(gain * 100)}%`} ratio={gain} />
+          <Meter label="Volume" value={`${Math.round(volume * 100)}%`} ratio={volume} />
         </section>
 
         <SelectRow
