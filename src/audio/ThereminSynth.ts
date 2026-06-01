@@ -22,7 +22,6 @@ export class ThereminSynth {
   private compressor: DynamicsCompressorNode | null = null;
   private vibratoOscillator: OscillatorNode | null = null;
   private vibratoGain: GainNode | null = null;
-  private muted = false;
   private tone: SynthTone = {
     waveform: "sine",
     filterCutoff: 4200,
@@ -94,19 +93,11 @@ export class ThereminSynth {
     }
 
     const now = this.context.currentTime;
-    const targetGain = this.muted ? 0 : update.gain;
 
     this.oscillator.frequency.setTargetAtTime(update.frequency, now, 0.026);
-    this.masterGain.gain.setTargetAtTime(targetGain, now, targetGain > 0 ? 0.032 : 0.07);
+    this.masterGain.gain.setTargetAtTime(update.gain, now, update.gain > 0 ? 0.032 : 0.07);
     this.vibratoOscillator.frequency.setTargetAtTime(update.vibratoRate, now, 0.08);
     this.vibratoGain.gain.setTargetAtTime(update.vibratoDepth, now, 0.08);
-  }
-
-  setMuted(muted: boolean): void {
-    this.muted = muted;
-    if (this.context && this.masterGain) {
-      this.masterGain.gain.setTargetAtTime(0, this.context.currentTime, 0.04);
-    }
   }
 
   setTone(tone: Partial<SynthTone>): void {

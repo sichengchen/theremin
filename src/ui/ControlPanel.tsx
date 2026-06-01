@@ -16,7 +16,6 @@ import { Switch } from "@/components/ui/switch";
 export interface ControlPanelProps {
   cameraReady: boolean;
   audioReady: boolean;
-  muted: boolean;
   settings: MappingSettings;
   waveform: Waveform;
   handCount: number;
@@ -25,7 +24,6 @@ export interface ControlPanelProps {
   confidence: number;
   onCameraChange: (enabled: boolean) => void;
   onAudioChange: (enabled: boolean) => void;
-  onMuteChange: (muted: boolean) => void;
   onWaveformChange: (waveform: Waveform) => void;
   onSettingsChange: (settings: MappingSettings) => void;
   onReset: () => void;
@@ -36,7 +34,6 @@ const WAVEFORMS: Waveform[] = ["sine", "triangle", "sawtooth", "square"];
 export function ControlPanel({
   cameraReady,
   audioReady,
-  muted,
   settings,
   waveform,
   handCount,
@@ -45,7 +42,6 @@ export function ControlPanel({
   confidence,
   onCameraChange,
   onAudioChange,
-  onMuteChange,
   onWaveformChange,
   onSettingsChange,
   onReset,
@@ -66,7 +62,6 @@ export function ControlPanel({
         <section className="switch-grid" aria-label="Input and audio">
           <SwitchRow label="Camera" checked={cameraReady} onCheckedChange={onCameraChange} />
           <SwitchRow label="Audio" checked={audioReady} onCheckedChange={onAudioChange} />
-          <SwitchRow label="Mute" checked={muted} disabled={!audioReady} onCheckedChange={onMuteChange} />
         </section>
 
         <section className="meter-grid" aria-label="Live meters">

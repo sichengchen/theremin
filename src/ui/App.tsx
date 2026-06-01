@@ -44,7 +44,6 @@ export function App() {
   const [cameraReady, setCameraReady] = useState(false);
   const [visionReady, setVisionReady] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
-  const [muted, setMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<LiveMetrics>(INITIAL_METRICS);
   const [settings, setSettings] = useState<MappingSettings>(DEFAULT_MAPPING_SETTINGS);
@@ -118,7 +117,6 @@ export function App() {
     const synth = synthRef.current;
     synthRef.current = null;
     setAudioReady(false);
-    setMuted(false);
     void synth?.shutdown();
   }, []);
 
@@ -143,19 +141,12 @@ export function App() {
     synthRef.current?.setTone({ waveform: next });
   }, []);
 
-  const setMuteEnabled = useCallback((next: boolean) => {
-    setMuted(next);
-    synthRef.current?.setMuted(next);
-  }, []);
-
   const resetInstrument = useCallback(() => {
     setSettings(DEFAULT_MAPPING_SETTINGS);
     setWaveform("sine");
-    setMuted(false);
     setSplitX(DEFAULT_SPLIT_X);
     localStorage.setItem(SPLIT_STORAGE_KEY, String(DEFAULT_SPLIT_X));
     controlRef.current = null;
-    synthRef.current?.setMuted(false);
     synthRef.current?.setTone({ waveform: "sine", filterCutoff: 4200 });
     synthRef.current?.applySettings(DEFAULT_MAPPING_SETTINGS);
   }, []);
@@ -240,7 +231,6 @@ export function App() {
         <ControlPanel
           cameraReady={cameraReady}
           audioReady={audioReady}
-          muted={muted}
           settings={settings}
           waveform={waveform}
           handCount={metrics.handCount}
@@ -249,7 +239,6 @@ export function App() {
           confidence={metrics.confidence}
           onCameraChange={setCameraEnabled}
           onAudioChange={setAudioEnabled}
-          onMuteChange={setMuteEnabled}
           onWaveformChange={updateWaveform}
           onSettingsChange={updateSettings}
           onReset={resetInstrument}
