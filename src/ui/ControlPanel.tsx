@@ -42,6 +42,12 @@ export interface ControlPanelProps {
 }
 
 const WAVEFORMS: Waveform[] = ["sine", "triangle", "sawtooth", "square"];
+const WAVEFORM_LABELS: Partial<Record<Waveform, string>> = {
+  sawtooth: "SAWTOOTH",
+  sine: "SINE",
+  square: "SQUARE",
+  triangle: "TRIANGLE",
+};
 const HAND_ASSIGNMENTS = ["left-volume", "right-volume"] as const;
 const HAND_ASSIGNMENT_LABELS: Record<HandAssignment, string> = {
   "left-volume": "Left vol / Right pitch",
@@ -235,6 +241,7 @@ export function ControlPanel({
           value={waveform}
           onValueChange={(value) => onWaveformChange(value as Waveform)}
           options={WAVEFORMS}
+          optionLabels={WAVEFORM_LABELS}
         />
 
         <Collapsible className="more-panel" open={moreOpen} onOpenChange={(open) => setMoreOpen(open)}>
