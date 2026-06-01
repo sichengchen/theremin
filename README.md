@@ -28,6 +28,15 @@ pnpm dev
 
 Then open the local URL shown in the terminal and allow camera access.
 
+## Deployment
+
+Build and deploy to Cloudflare Workers:
+
+```bash
+pnpm run build
+npx wrangler deploy
+```
+
 ## Scripts
 
 ```bash
