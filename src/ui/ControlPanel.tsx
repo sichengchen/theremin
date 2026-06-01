@@ -60,19 +60,13 @@ export function ControlPanel({
   onOpenCalibration,
   onReset,
 }: ControlPanelProps) {
-  const stateLine = [
-    cameraReady ? "camera ready" : "camera off",
-    audioReady && !muted ? "audio armed" : muted ? "muted" : "audio off",
-    `${handCount}/2 hands`,
-  ].join(" · ");
-
   return (
     <aside className="control-rail" aria-label="Instrument controls">
       <Card className="instrument-panel">
         <CardHeader className="instrument-panel-header">
           <div>
-            <CardTitle className="text-lg font-semibold tracking-normal">Theremin</CardTitle>
-            <p className="panel-subtitle">{stateLine}</p>
+            <CardTitle className="text-lg font-semibold tracking-normal">Controls</CardTitle>
+            <p className="panel-subtitle">{handCount}/2 hands</p>
           </div>
         </CardHeader>
 
@@ -199,7 +193,6 @@ function SelectRow<TValue extends string>({
     <div className="field-row">
       <div>
         <span>{label}</span>
-        <strong className="capitalize">{value}</strong>
       </div>
       <Select value={value} onValueChange={(next) => onValueChange(next as TValue)}>
         <SelectTrigger className="w-36 justify-between" aria-label={label}>

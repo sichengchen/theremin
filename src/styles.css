@@ -213,6 +213,10 @@ button:not(:disabled) {
   line-height: 1.2;
 }
 
+.field-row > div:first-child {
+  justify-self: start;
+}
+
 .field-row strong,
 .control-label strong {
   min-width: 0;
@@ -277,6 +281,10 @@ button:not(:disabled) {
   gap: 12px;
   border-top: 1px solid color-mix(in oklch, var(--border), transparent 25%);
   padding: 12px 10px 14px;
+}
+
+[data-slot="progress"] > span[role="presentation"] {
+  display: none !important;
 }
 
 .secondary-actions {
