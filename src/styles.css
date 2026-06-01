@@ -189,7 +189,7 @@ button:not(:disabled) {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 34px;
+  width: 24px;
   height: 58px;
   transform: translate(-50%, -50%);
   border: 1px solid var(--liquid-glass-edge);
@@ -529,12 +529,12 @@ button:not(:disabled) {
     grid-template-columns: 1fr;
   }
 
-  .split-control,
-  .split-control-grip {
+  .split-control {
     width: 30px;
   }
 
   .split-control-grip {
+    width: 22px;
     height: 48px;
   }
 }
