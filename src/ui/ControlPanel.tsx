@@ -30,7 +30,6 @@ export interface ControlPanelProps {
   audioReady: boolean;
   settings: MappingSettings;
   waveform: Waveform;
-  handCount: number;
   frequency: number;
   volume: number;
   confidence: number;
@@ -61,7 +60,6 @@ export function ControlPanel({
   audioReady,
   settings,
   waveform,
-  handCount,
   frequency,
   volume,
   confidence,
@@ -206,7 +204,6 @@ export function ControlPanel({
       <CardHeader className="control-dock-header" onPointerDown={beginDrag}>
         <div>
           <CardTitle>Air Theremin</CardTitle>
-          <p>{handCount}/2 hands</p>
         </div>
         <Button data-drag-exempt variant="ghost" size="icon-sm" aria-label="Reset controls" onClick={onReset}>
           <RefreshCcw />

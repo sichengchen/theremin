@@ -14,14 +14,12 @@ import { ControlPanel } from "./ControlPanel";
 import { renderOverlay } from "./OverlayCanvas";
 
 interface LiveMetrics {
-  handCount: number;
   frequency: number;
   volume: number;
   confidence: number;
 }
 
 const INITIAL_METRICS: LiveMetrics = {
-  handCount: 0,
   frequency: DEFAULT_MAPPING_SETTINGS.minFrequency,
   volume: 0,
   confidence: 0,
@@ -186,7 +184,6 @@ export function App() {
           if (timestamp - lastMetricPaintRef.current > 90) {
             lastMetricPaintRef.current = timestamp;
             setMetrics({
-              handCount: frame.hands.length,
               frequency: control.frequency,
               volume: control.volume01,
               confidence: control.confidence,
@@ -239,7 +236,6 @@ export function App() {
           audioReady={audioReady}
           settings={settings}
           waveform={waveform}
-          handCount={metrics.handCount}
           frequency={metrics.frequency}
           volume={metrics.volume}
           confidence={metrics.confidence}
