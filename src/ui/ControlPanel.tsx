@@ -16,6 +16,14 @@ import {
   type MappingSettings,
   type PitchSide,
 } from "../mapping/controlMapping";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface ControlPanelProps {
   cameraReady: boolean;
@@ -57,134 +65,144 @@ export function ControlPanel({
   onReset,
 }: ControlPanelProps) {
   return (
-    <aside className="control-panel" aria-label="Instrument controls">
-      <div className="status-row">
-        <StatusPill active={cameraReady} icon={<Camera size={15} />} label={cameraReady ? "Camera" : "Camera off"} />
-        <StatusPill active={audioReady && !muted} icon={<AudioLines size={15} />} label={audioReady ? "Audio" : "Audio off"} />
-        <StatusPill active={handCount === 2} icon={<Hand size={15} />} label={`${handCount}/2 hands`} />
-      </div>
+    <aside className="control-rail" aria-label="Instrument controls">
+      <Card className="instrument-panel">
+        <CardHeader className="instrument-panel-header">
+          <div>
+            <CardTitle className="text-lg font-semibold tracking-normal">Instrument</CardTitle>
+            <p className="panel-subtitle">Live controls</p>
+          </div>
+          <Badge variant={handCount === 2 ? "default" : "outline"} className="gap-1">
+            <Hand className="size-3" />
+            {handCount}/2
+          </Badge>
+        </CardHeader>
 
-      <div className="primary-actions">
-        <button className="action-button" onClick={onStartCamera} disabled={cameraReady} title="Start camera">
-          <Camera size={18} />
-          <span>{cameraReady ? "Camera ready" : "Start camera"}</span>
-        </button>
-        <button className="action-button accent" onClick={onStartAudio} disabled={audioReady} title="Arm audio">
-          <Play size={18} />
-          <span>{audioReady ? "Audio armed" : "Arm audio"}</span>
-        </button>
-        <button className="icon-button" onClick={onToggleMute} title={muted ? "Unmute" : "Mute"}>
-          {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-        </button>
-      </div>
+        <CardContent className="instrument-panel-content">
+          <section className="status-grid" aria-label="Status">
+            <StatusPill active={cameraReady} icon={<Camera />} label={cameraReady ? "Camera ready" : "Camera off"} />
+            <StatusPill
+              active={audioReady && !muted}
+              icon={<AudioLines />}
+              label={audioReady ? "Audio armed" : "Audio off"}
+            />
+            <StatusPill active={handCount === 2} icon={<Hand />} label={`${handCount}/2 hands`} />
+          </section>
 
-      <section className="control-group" aria-label="Sound">
-        <div className="group-title">
-          <SlidersHorizontal size={16} />
-          <span>Sound</span>
-        </div>
-        <label>
-          <span>Waveform</span>
-          <select value={waveform} onChange={(event) => onWaveformChange(event.target.value as Waveform)}>
-            {WAVEFORMS.map((candidate) => (
-              <option key={candidate} value={candidate}>
-                {candidate}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>Pitch side</span>
-          <select
-            value={settings.pitchSide}
-            onChange={(event) =>
-              onSettingsChange({ ...settings, pitchSide: event.target.value as PitchSide })
-            }
-          >
-            <option value="right">right</option>
-            <option value="left">left</option>
-          </select>
-        </label>
-      </section>
+          <section className="action-grid" aria-label="Performance actions">
+            <Button
+              variant="outline"
+              size="lg"
+              className="control-button"
+              onClick={onStartCamera}
+              disabled={cameraReady}
+            >
+              <Camera />
+              {cameraReady ? "Camera ready" : "Start camera"}
+            </Button>
+            <Button size="lg" className="control-button" onClick={onStartAudio} disabled={audioReady}>
+              <Play />
+              {audioReady ? "Audio armed" : "Arm audio"}
+            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    size="icon-lg"
+                    aria-label={muted ? "Unmute" : "Mute"}
+                    onClick={onToggleMute}
+                  />
+                }
+              >
+                {muted ? <VolumeX /> : <Volume2 />}
+              </TooltipTrigger>
+              <TooltipContent side="left">{muted ? "Unmute" : "Mute"}</TooltipContent>
+            </Tooltip>
+          </section>
 
-      <section className="control-group" aria-label="Response">
-        <div className="group-title">
-          <Gauge size={16} />
-          <span>Response</span>
-        </div>
-        <Slider
-          label="Smoothing"
-          min={0.15}
-          max={0.92}
-          step={0.01}
-          value={settings.smoothing}
-          onChange={(smoothing) => onSettingsChange({ ...settings, smoothing })}
-        />
-        <Slider
-          label="Sensitivity"
-          min={0.55}
-          max={1.65}
-          step={0.01}
-          value={settings.sensitivity}
-          onChange={(sensitivity) => onSettingsChange({ ...settings, sensitivity })}
-        />
-        <Slider
-          label="Max note"
-          min={880}
-          max={3520}
-          step={10}
-          value={settings.maxFrequency}
-          onChange={(maxFrequency) => onSettingsChange({ ...settings, maxFrequency })}
-        />
-      </section>
+          <Separator />
 
-      <div className="meter-stack" aria-label="Live meters">
-        <Meter label="Pitch" value={formatFrequency(frequency)} ratio={frequencyRatio(frequency, settings)} />
-        <Meter label="Volume" value={`${Math.round(gain * 100)}%`} ratio={gain} />
-        <Meter label="Confidence" value={`${Math.round(confidence * 100)}%`} ratio={confidence} />
-      </div>
+          <section className="control-section" aria-label="Sound">
+            <div className="section-heading">
+              <SlidersHorizontal className="size-4" />
+              <span>Sound</span>
+            </div>
+            <SelectRow
+              label="Waveform"
+              value={waveform}
+              onValueChange={(value) => onWaveformChange(value as Waveform)}
+              options={WAVEFORMS}
+            />
+            <SelectRow
+              label="Pitch side"
+              value={settings.pitchSide}
+              onValueChange={(value) =>
+                onSettingsChange({ ...settings, pitchSide: value as PitchSide })
+              }
+              options={["right", "left"]}
+            />
+          </section>
 
-      <div className="secondary-actions">
-        <button onClick={onOpenCalibration}>
-          <FlipHorizontal size={16} />
-          <span>Calibrate</span>
-        </button>
-        <button onClick={onReset}>
-          <RefreshCcw size={16} />
-          <span>Reset</span>
-        </button>
-      </div>
+          <Separator />
+
+          <section className="control-section" aria-label="Response">
+            <div className="section-heading">
+              <Gauge className="size-4" />
+              <span>Response</span>
+            </div>
+            <SliderRow
+              label="Smoothing"
+              value={settings.smoothing}
+              min={0.15}
+              max={0.92}
+              step={0.01}
+              format={(value) => `${Math.round(value * 100)}%`}
+              onChange={(smoothing) => onSettingsChange({ ...settings, smoothing })}
+            />
+            <SliderRow
+              label="Sensitivity"
+              value={settings.sensitivity}
+              min={0.55}
+              max={1.65}
+              step={0.01}
+              format={(value) => value.toFixed(2)}
+              onChange={(sensitivity) => onSettingsChange({ ...settings, sensitivity })}
+            />
+            <SliderRow
+              label="Max note"
+              value={settings.maxFrequency}
+              min={880}
+              max={3520}
+              step={10}
+              format={formatFrequency}
+              onChange={(maxFrequency) => onSettingsChange({ ...settings, maxFrequency })}
+            />
+          </section>
+
+          <Separator />
+
+          <section className="control-section" aria-label="Live meters">
+            <Meter label="Pitch" value={formatFrequency(frequency)} ratio={frequencyRatio(frequency, settings)} />
+            <Meter label="Volume" value={`${Math.round(gain * 100)}%`} ratio={gain} />
+            <Meter label="Confidence" value={`${Math.round(confidence * 100)}%`} ratio={confidence} />
+          </section>
+
+          <Separator />
+
+          <section className="secondary-actions" aria-label="Calibration">
+            <Button variant="outline" size="lg" className="control-button justify-start" onClick={onOpenCalibration}>
+              <FlipHorizontal />
+              Calibrate
+            </Button>
+            <Button variant="outline" size="lg" className="control-button justify-start" onClick={onReset}>
+              <RefreshCcw />
+              Reset
+            </Button>
+          </section>
+        </CardContent>
+      </Card>
     </aside>
-  );
-}
-
-function Slider({
-  label,
-  min,
-  max,
-  step,
-  value,
-  onChange,
-}: {
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <label>
-      <span>{label}</span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-      />
-    </label>
   );
 }
 
@@ -194,7 +212,7 @@ function StatusPill({
   label,
 }: {
   active: boolean;
-  icon: React.ReactNode;
+  icon: React.ReactElement;
   label: string;
 }) {
   return (
@@ -205,16 +223,81 @@ function StatusPill({
   );
 }
 
+function SelectRow<TValue extends string>({
+  label,
+  value,
+  options,
+  onValueChange,
+}: {
+  label: string;
+  value: TValue;
+  options: readonly TValue[];
+  onValueChange: (value: TValue) => void;
+}) {
+  return (
+    <div className="field-row">
+      <div>
+        <span>{label}</span>
+        <strong className="capitalize">{value}</strong>
+      </div>
+      <Select value={value} onValueChange={(next) => onValueChange(next as TValue)}>
+        <SelectTrigger className="w-36 justify-between" aria-label={label}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option} value={option}>
+              <span className="capitalize">{option}</span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function SliderRow({
+  label,
+  value,
+  min,
+  max,
+  step,
+  format,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  format: (value: number) => string;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div className="slider-row">
+      <div className="control-label">
+        <span>{label}</span>
+        <strong>{format(value)}</strong>
+      </div>
+      <Slider
+        min={min}
+        max={max}
+        step={step}
+        value={[value]}
+        onValueChange={(next) => onChange(Array.isArray(next) ? next[0] : next)}
+      />
+    </div>
+  );
+}
+
 function Meter({ label, value, ratio }: { label: string; value: string; ratio: number }) {
   return (
-    <div className="meter">
-      <div className="meter-label">
+    <div className="meter-row">
+      <div className="control-label">
         <span>{label}</span>
         <strong>{value}</strong>
       </div>
-      <div className="meter-track">
-        <div className="meter-fill" style={{ width: `${Math.round(Math.max(0, Math.min(1, ratio)) * 100)}%` }} />
-      </div>
+      <Progress value={Math.max(0, Math.min(1, ratio)) * 100} />
     </div>
   );
 }

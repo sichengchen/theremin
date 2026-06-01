@@ -1,4 +1,14 @@
-import { Check, Target, X } from "lucide-react";
+import { Check, Target } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import {
   CALIBRATION_STEP_LABELS,
   CALIBRATION_STEPS,
@@ -27,52 +37,52 @@ export function CalibrationPanel({
   onClose,
   onReset,
 }: CalibrationPanelProps) {
-  if (!open) {
-    return null;
-  }
-
   const stepIndex = CALIBRATION_STEPS.indexOf(step);
+  const progress = ((stepIndex + 1) / CALIBRATION_STEPS.length) * 100;
 
   return (
-    <div className="calibration-panel" role="dialog" aria-modal="true" aria-label="Calibration">
-      <div className="calibration-header">
-        <div>
-          <span className="eyebrow">Calibration</span>
-          <h2>{CALIBRATION_STEP_LABELS[step]}</h2>
+    <Dialog open={open} onOpenChange={(nextOpen) => (!nextOpen ? onClose() : undefined)}>
+      <DialogContent className="calibration-dialog" showCloseButton>
+        <DialogHeader>
+          <DialogDescription>Calibration</DialogDescription>
+          <DialogTitle className="text-2xl font-semibold tracking-normal">
+            {CALIBRATION_STEP_LABELS[step]}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex items-center gap-2">
+          {CALIBRATION_STEPS.map((candidate, index) => (
+            <div className={index <= stepIndex ? "step-dot active" : "step-dot"} key={candidate}>
+              {index < stepIndex ? <Check className="size-3.5" /> : index + 1}
+            </div>
+          ))}
         </div>
-        <button className="icon-button" onClick={onClose} title="Close calibration">
-          <X size={18} />
-        </button>
-      </div>
 
-      <div className="step-list">
-        {CALIBRATION_STEPS.map((candidate, index) => (
-          <div className={index <= stepIndex ? "step-dot active" : "step-dot"} key={candidate}>
-            {index < stepIndex ? <Check size={14} /> : index + 1}
-          </div>
-        ))}
-      </div>
+        <Progress value={progress} />
 
-      <div className="calibration-readout">
-        <span>Pitch range</span>
-        <strong>
-          {calibration.pitchMinX.toFixed(2)} - {calibration.pitchMaxX.toFixed(2)}
-        </strong>
-        <span>Volume range</span>
-        <strong>
-          {calibration.volumeMaxY.toFixed(2)} - {calibration.volumeMinY.toFixed(2)}
-        </strong>
-      </div>
+        <div className="calibration-readout">
+          <span>Pitch range</span>
+          <strong>
+            {calibration.pitchMinX.toFixed(2)} - {calibration.pitchMaxX.toFixed(2)}
+          </strong>
+          <span>Volume range</span>
+          <strong>
+            {calibration.volumeMaxY.toFixed(2)} - {calibration.volumeMinY.toFixed(2)}
+          </strong>
+        </div>
 
-      {error ? <p className="error-text">{error}</p> : null}
+        {error ? <p className="error-text">{error}</p> : null}
 
-      <div className="calibration-actions">
-        <button className="action-button accent" onClick={onCapture} disabled={!canCapture}>
-          <Target size={18} />
-          <span>Capture</span>
-        </button>
-        <button onClick={onReset}>Reset defaults</button>
-      </div>
-    </div>
+        <DialogFooter className="grid grid-cols-2 gap-2 sm:grid-cols-2">
+          <Button size="lg" onClick={onCapture} disabled={!canCapture}>
+            <Target />
+            Capture
+          </Button>
+          <Button variant="outline" size="lg" onClick={onReset}>
+            Reset defaults
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

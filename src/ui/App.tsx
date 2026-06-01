@@ -21,6 +21,7 @@ import type { VisionFrame } from "../vision/handTypes";
 import { CalibrationPanel } from "./CalibrationPanel";
 import { ControlPanel } from "./ControlPanel";
 import { renderOverlay } from "./OverlayCanvas";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface LiveMetrics {
   handCount: number;
@@ -246,50 +247,52 @@ export function App() {
   }, []);
 
   return (
-    <main className="app-shell">
-      <section className="stage" aria-label="Vision theremin performance surface">
-        <video ref={videoRef} className="camera-feed" playsInline muted />
-        <canvas ref={canvasRef} className="overlay-canvas" />
-        <div className="brand-lockup">
-          <span>Vision Theremin</span>
-          <strong>{visionReady ? "MediaPipe Hand Landmarker" : "Ready"}</strong>
-        </div>
-        {error ? <div className="error-banner">{error}</div> : null}
-      </section>
+    <TooltipProvider>
+      <main className="app-shell">
+        <section className="stage" aria-label="Vision theremin performance surface">
+          <video ref={videoRef} className="camera-feed" playsInline muted />
+          <canvas ref={canvasRef} className="overlay-canvas" />
+          <div className="brand-lockup">
+            <span>Vision Theremin</span>
+            <strong>{visionReady ? "MediaPipe Hand Landmarker" : "Ready"}</strong>
+          </div>
+          {error ? <div className="error-banner">{error}</div> : null}
+        </section>
 
-      <ControlPanel
-        cameraReady={cameraReady}
-        audioReady={audioReady}
-        muted={muted}
-        settings={settings}
-        waveform={waveform}
-        handCount={metrics.handCount}
-        frequency={metrics.frequency}
-        gain={metrics.gain}
-        confidence={metrics.confidence}
-        onStartCamera={startCamera}
-        onStartAudio={startAudio}
-        onToggleMute={toggleMute}
-        onWaveformChange={updateWaveform}
-        onSettingsChange={updateSettings}
-        onOpenCalibration={() => {
-          setCalibrationOpen(true);
-          setCalibrationError(null);
-        }}
-        onReset={resetInstrument}
-      />
+        <ControlPanel
+          cameraReady={cameraReady}
+          audioReady={audioReady}
+          muted={muted}
+          settings={settings}
+          waveform={waveform}
+          handCount={metrics.handCount}
+          frequency={metrics.frequency}
+          gain={metrics.gain}
+          confidence={metrics.confidence}
+          onStartCamera={startCamera}
+          onStartAudio={startAudio}
+          onToggleMute={toggleMute}
+          onWaveformChange={updateWaveform}
+          onSettingsChange={updateSettings}
+          onOpenCalibration={() => {
+            setCalibrationOpen(true);
+            setCalibrationError(null);
+          }}
+          onReset={resetInstrument}
+        />
 
-      <CalibrationPanel
-        open={calibrationOpen}
-        step={calibrationStep}
-        calibration={calibration}
-        canCapture={canCaptureCalibration}
-        error={calibrationError}
-        onCapture={captureCalibration}
-        onClose={() => setCalibrationOpen(false)}
-        onReset={resetCalibration}
-      />
-    </main>
+        <CalibrationPanel
+          open={calibrationOpen}
+          step={calibrationStep}
+          calibration={calibration}
+          canCapture={canCaptureCalibration}
+          error={calibrationError}
+          onCapture={captureCalibration}
+          onClose={() => setCalibrationOpen(false)}
+          onReset={resetCalibration}
+        />
+      </main>
+    </TooltipProvider>
   );
 }
 
