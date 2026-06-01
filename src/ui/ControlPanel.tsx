@@ -48,11 +48,6 @@ const WAVEFORM_LABELS: Partial<Record<Waveform, string>> = {
   square: "SQUARE",
   triangle: "TRIANGLE",
 };
-const HAND_ASSIGNMENTS = ["left-volume", "right-volume"] as const;
-const HAND_ASSIGNMENT_LABELS: Record<HandAssignment, string> = {
-  "left-volume": "Left vol / Right pitch",
-  "right-volume": "Right vol / Left pitch",
-};
 const LOWEST_PITCH_MIDI = 24;
 const HIGHEST_PITCH_MIDI = 108;
 const MIN_PITCH_SPAN = 1;
@@ -61,7 +56,6 @@ const CONTROL_DOCK_MARGIN = 16;
 
 type ControlCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 type DragMode = "idle" | "dragging" | "snapping";
-type HandAssignment = (typeof HAND_ASSIGNMENTS)[number];
 
 interface Position {
   x: number;
@@ -84,7 +78,7 @@ export function ControlPanel({
 }: ControlPanelProps) {
   const lowPitchMidi = frequencyToMidi(settings.minFrequency);
   const highPitchMidi = frequencyToMidi(settings.maxFrequency);
-  const handAssignment = getHandAssignment(settings);
+  const handsSwapped = areHandsSwapped(settings);
   const dockRef = useRef<HTMLDivElement | null>(null);
   const dragOffsetRef = useRef<Position>({ x: 0, y: 0 });
   const dragPositionRef = useRef<Position | null>(null);
@@ -257,18 +251,17 @@ export function ControlPanel({
           </CollapsibleTrigger>
           <div id="more-settings" className="more-content" data-open={moreOpen ? "true" : undefined} aria-hidden={!moreOpen}>
             <div className="more-content-inner">
-              <SelectRow
+              <SwitchRow
                 label="Hands"
-                value={handAssignment}
-                onValueChange={(value) =>
+                value={handsSwapped ? "Right vol / Left pitch" : "Left vol / Right pitch"}
+                checked={handsSwapped}
+                ariaLabel="Swap volume and pitch hands"
+                onCheckedChange={(swapped) =>
                   onSettingsChange({
                     ...settings,
-                    ...handSettingsForAssignment(value),
+                    ...handSettingsForSwap(swapped),
                   })
                 }
-                options={HAND_ASSIGNMENTS}
-                optionLabels={HAND_ASSIGNMENT_LABELS}
-                triggerClassName="w-48 justify-between"
               />
               <SliderRow
                 label="Smoothing"
@@ -323,21 +316,28 @@ export function ControlPanel({
 
 function SwitchRow({
   label,
+  value,
   checked,
   disabled,
+  ariaLabel,
   onCheckedChange,
 }: {
   label: string;
+  value?: string;
   checked: boolean;
   disabled?: boolean;
+  ariaLabel?: string;
   onCheckedChange: (checked: boolean) => void;
 }) {
-  const id = `control-${label.toLowerCase()}`;
+  const id = `control-${label.toLowerCase().replaceAll(" ", "-")}`;
 
   return (
     <div className="switch-row" data-disabled={disabled ? "true" : undefined}>
       <Label htmlFor={id}>{label}</Label>
-      <Switch id={id} checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
+      <div className="switch-row-control">
+        {value ? <span className="switch-row-value">{value}</span> : null}
+        <Switch id={id} aria-label={ariaLabel} checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
+      </div>
     </div>
   );
 }
@@ -450,12 +450,12 @@ function Meter({ label, value, ratio }: { label: string; value: string; ratio: n
   );
 }
 
-function getHandAssignment(settings: Pick<MappingSettings, "volumeHand" | "pitchHand">): HandAssignment {
-  return settings.volumeHand === "Right" && settings.pitchHand === "Left" ? "right-volume" : "left-volume";
+function areHandsSwapped(settings: Pick<MappingSettings, "volumeHand" | "pitchHand">): boolean {
+  return settings.volumeHand === "Right" && settings.pitchHand === "Left";
 }
 
-function handSettingsForAssignment(value: HandAssignment): { volumeHand: InstrumentHand; pitchHand: InstrumentHand } {
-  return value === "right-volume"
+function handSettingsForSwap(swapped: boolean): { volumeHand: InstrumentHand; pitchHand: InstrumentHand } {
+  return swapped
     ? { volumeHand: "Right", pitchHand: "Left" }
     : { volumeHand: "Left", pitchHand: "Right" };
 }
