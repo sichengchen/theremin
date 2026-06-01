@@ -137,6 +137,7 @@ button:not(:disabled) {
   bottom: 0;
   z-index: 8;
   width: 34px;
+  --split-grip-half-height: 29px;
   transform: translateX(-50%);
   cursor: ew-resize;
   touch-action: none;
@@ -149,6 +150,14 @@ button:not(:disabled) {
   left: 50%;
   width: 3px;
   transform: translateX(-50%);
+}
+
+.split-control-line::before,
+.split-control-line::after {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  content: "";
   background:
     linear-gradient(
       to bottom,
@@ -165,6 +174,16 @@ button:not(:disabled) {
     0 0 24px var(--liquid-glass-glow);
   backdrop-filter: var(--liquid-glass-filter);
   -webkit-backdrop-filter: var(--liquid-glass-filter);
+}
+
+.split-control-line::before {
+  top: 0;
+  bottom: calc(50% + var(--split-grip-half-height));
+}
+
+.split-control-line::after {
+  top: calc(50% + var(--split-grip-half-height));
+  bottom: 0;
 }
 
 .split-control-grip {
@@ -617,6 +636,7 @@ button:not(:disabled) {
 
   .split-control {
     width: 30px;
+    --split-grip-half-height: 24px;
   }
 
   .split-control-grip {
