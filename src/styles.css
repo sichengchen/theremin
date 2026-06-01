@@ -547,16 +547,19 @@ button:not(:disabled) {
 }
 
 .onboarding-step-number {
-  display: inline-grid;
+  display: inline-flex;
   width: 22px;
   height: 22px;
-  place-items: center;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--liquid-glass-edge);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
   color: var(--liquid-glass-text);
   font-size: 11px;
   font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .onboarding-action {
