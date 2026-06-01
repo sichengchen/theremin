@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vite-plus/test";
-import { DEFAULT_CALIBRATION } from "./calibration";
 import {
   DEFAULT_MAPPING_SETTINGS,
   assignControlHands,
@@ -8,18 +7,26 @@ import {
 import type { Landmark, TrackedHand } from "../vision/handTypes";
 
 describe("control mapping", () => {
-  it("assigns pitch to the configured side", () => {
+  it("assigns pitch and volume by split region", () => {
     const left = handAt(0.2, 0.5, "Left");
     const right = handAt(0.8, 0.5, "Right");
 
-    expect(assignControlHands([left, right], "right").pitchHand).toBe(right);
-    expect(assignControlHands([left, right], "left").pitchHand).toBe(left);
+    expect(assignControlHands([left, right], 0.5).pitchHand).toBe(right);
+    expect(assignControlHands([left, right], 0.5).volumeHand).toBe(left);
   });
 
-  it("maps pitch logarithmically across the calibrated range", () => {
-    const pitch = handAt(DEFAULT_CALIBRATION.pitchMaxX, 0.5, "Right");
-    const volume = handAt(0.2, DEFAULT_CALIBRATION.volumeMaxY, "Left");
-    const control = mapHandsToControls([pitch, volume]);
+  it("assigns controls by region instead of handedness", () => {
+    const rightHandOnLeft = handAt(0.2, 0.5, "Right");
+    const leftHandOnRight = handAt(0.8, 0.5, "Left");
+
+    expect(assignControlHands([rightHandOnLeft, leftHandOnRight], 0.5).volumeHand).toBe(rightHandOnLeft);
+    expect(assignControlHands([rightHandOnLeft, leftHandOnRight], 0.5).pitchHand).toBe(leftHandOnRight);
+  });
+
+  it("maps pitch logarithmically across the pitch region", () => {
+    const pitch = handAt(0.98, 0.5, "Right");
+    const volume = handAt(0.2, 0.05, "Left");
+    const control = mapHandsToControls([pitch, volume], DEFAULT_MAPPING_SETTINGS, 0.5);
 
     expect(control.frequency).toBeGreaterThan(DEFAULT_MAPPING_SETTINGS.maxFrequency * 0.95);
     expect(control.gain).toBeGreaterThan(0.7);
@@ -34,11 +41,11 @@ describe("control mapping", () => {
   });
 
   it("smooths transitions from a previous control state", () => {
-    const low = handAt(DEFAULT_CALIBRATION.pitchMinX, 0.5, "Right");
-    const volume = handAt(0.2, DEFAULT_CALIBRATION.volumeMaxY, "Left");
+    const low = handAt(0.52, 0.5, "Right");
+    const volume = handAt(0.2, 0.05, "Left");
     const previous = mapHandsToControls([low, volume]);
-    const high = handAt(DEFAULT_CALIBRATION.pitchMaxX, 0.5, "Right");
-    const next = mapHandsToControls([high, volume], DEFAULT_MAPPING_SETTINGS, DEFAULT_CALIBRATION, previous);
+    const high = handAt(0.98, 0.5, "Right");
+    const next = mapHandsToControls([high, volume], DEFAULT_MAPPING_SETTINGS, 0.5, previous);
 
     expect(next.pitch01).toBeGreaterThan(previous.pitch01);
     expect(next.pitch01).toBeLessThan(1);

@@ -1,16 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Slider } from "@/components/ui/slider";
 import { ThereminSynth, type Waveform } from "../audio/ThereminSynth";
 import {
-  CALIBRATION_STEPS,
-  DEFAULT_CALIBRATION,
-  loadCalibration,
-  saveCalibration,
-  sanitizeCalibration,
-  type Calibration,
-  type CalibrationStep,
-} from "../mapping/calibration";
-import {
   DEFAULT_MAPPING_SETTINGS,
+  DEFAULT_SPLIT_X,
   mapHandsToControls,
   type ControlState,
   type MappingSettings,
@@ -18,10 +11,8 @@ import {
 import { createCameraSession, type CameraSession } from "../vision/camera";
 import { BrowserHandLandmarker } from "../vision/handLandmarker";
 import type { VisionFrame } from "../vision/handTypes";
-import { CalibrationPanel } from "./CalibrationPanel";
 import { ControlPanel } from "./ControlPanel";
 import { renderOverlay } from "./OverlayCanvas";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface LiveMetrics {
   handCount: number;
@@ -36,6 +27,8 @@ const INITIAL_METRICS: LiveMetrics = {
   gain: 0,
   confidence: 0,
 };
+
+const SPLIT_STORAGE_KEY = "vision-theremin-split-x-v1";
 
 export function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -56,15 +49,7 @@ export function App() {
   const [metrics, setMetrics] = useState<LiveMetrics>(INITIAL_METRICS);
   const [settings, setSettings] = useState<MappingSettings>(DEFAULT_MAPPING_SETTINGS);
   const [waveform, setWaveform] = useState<Waveform>("sine");
-  const [calibration, setCalibration] = useState<Calibration>(() => loadCalibration());
-  const [calibrationOpen, setCalibrationOpen] = useState(false);
-  const [calibrationStep, setCalibrationStep] = useState<CalibrationStep>("pitch-low");
-  const [calibrationError, setCalibrationError] = useState<string | null>(null);
-
-  const canCaptureCalibration = useMemo(() => {
-    const control = controlRef.current;
-    return Boolean(control?.pitchHand || control?.volumeHand);
-  }, [metrics.handCount]);
+  const [splitX, setSplitX] = useState(loadSplitX);
 
   const startCamera = useCallback(async () => {
     setError(null);
@@ -167,65 +152,20 @@ export function App() {
     setSettings(DEFAULT_MAPPING_SETTINGS);
     setWaveform("sine");
     setMuted(false);
+    setSplitX(DEFAULT_SPLIT_X);
+    localStorage.setItem(SPLIT_STORAGE_KEY, String(DEFAULT_SPLIT_X));
     controlRef.current = null;
     synthRef.current?.setMuted(false);
     synthRef.current?.setTone({ waveform: "sine", filterCutoff: 4200 });
     synthRef.current?.applySettings(DEFAULT_MAPPING_SETTINGS);
   }, []);
 
-  const resetCalibration = useCallback(() => {
-    setCalibration(DEFAULT_CALIBRATION);
-    saveCalibration(DEFAULT_CALIBRATION);
-    setCalibrationStep("pitch-low");
-    setCalibrationError(null);
+  const updateSplit = useCallback((next: number | readonly number[]) => {
+    const raw = Array.isArray(next) ? next[0] : next;
+    const value = Math.min(Math.max((raw ?? DEFAULT_SPLIT_X * 100) / 100, 0.18), 0.82);
+    setSplitX(value);
+    localStorage.setItem(SPLIT_STORAGE_KEY, String(value));
   }, []);
-
-  const captureCalibration = useCallback(() => {
-    const control = controlRef.current;
-    if (!control) {
-      setCalibrationError("No hand is being tracked.");
-      return;
-    }
-
-    const next = { ...calibration };
-
-    if (calibrationStep === "pitch-low" || calibrationStep === "pitch-high") {
-      const x = control.pitchHand?.landmarks[8]?.x ?? control.pitchHand?.center.x;
-      if (typeof x !== "number") {
-        setCalibrationError("Pitch hand is not visible.");
-        return;
-      }
-      if (calibrationStep === "pitch-low") {
-        next.pitchMinX = x;
-      } else {
-        next.pitchMaxX = x;
-      }
-    } else {
-      const y = control.volumeHand?.landmarks[9]?.y ?? control.volumeHand?.center.y;
-      if (typeof y !== "number") {
-        setCalibrationError("Volume hand is not visible.");
-        return;
-      }
-      if (calibrationStep === "volume-quiet") {
-        next.volumeMinY = y;
-      } else {
-        next.volumeMaxY = y;
-      }
-    }
-
-    const sanitized = sanitizeCalibration(next);
-    setCalibration(sanitized);
-    saveCalibration(sanitized);
-    setCalibrationError(null);
-
-    const stepIndex = CALIBRATION_STEPS.indexOf(calibrationStep);
-    if (stepIndex === CALIBRATION_STEPS.length - 1) {
-      setCalibrationOpen(false);
-      setCalibrationStep("pitch-low");
-    } else {
-      setCalibrationStep(CALIBRATION_STEPS[stepIndex + 1]);
-    }
-  }, [calibration, calibrationStep]);
 
   useEffect(() => {
     let mounted = true;
@@ -242,12 +182,17 @@ export function App() {
       if (video && canvas && landmarker && cameraReady && visionReady && video.readyState >= 2) {
         try {
           const frame = landmarker.detect(video, timestamp);
-          const control = mapHandsToControls(frame.hands, settings, calibration, controlRef.current ?? undefined);
+          const control = mapHandsToControls(
+            frame.hands,
+            settings,
+            splitX,
+            controlRef.current ?? undefined,
+          );
 
           frameRef.current = frame;
           controlRef.current = control;
           synthRef.current?.update(control);
-          renderOverlay(canvas, frame, control, calibration);
+          renderOverlay(canvas, frame, control, splitX);
 
           if (timestamp - lastMetricPaintRef.current > 90) {
             lastMetricPaintRef.current = timestamp;
@@ -262,7 +207,7 @@ export function App() {
           setError(toUserError(caught));
         }
       } else if (canvas) {
-        renderOverlay(canvas, frameRef.current, controlRef.current, calibration);
+        renderOverlay(canvas, frameRef.current, controlRef.current, splitX);
       }
 
       rafRef.current = window.requestAnimationFrame(tick);
@@ -276,7 +221,7 @@ export function App() {
         window.cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [calibration, cameraReady, settings, visionReady]);
+  }, [cameraReady, settings, splitX, visionReady]);
 
   useEffect(() => {
     return () => {
@@ -287,18 +232,11 @@ export function App() {
   }, []);
 
   return (
-    <TooltipProvider>
-      <main className="app-shell">
-        <section className="stage" aria-label="Vision theremin performance surface">
-          <video ref={videoRef} className="camera-feed" playsInline muted />
-          <canvas ref={canvasRef} className="overlay-canvas" />
-          <div className="brand-lockup">
-            <span>Vision Theremin</span>
-            <strong>{visionReady ? "MediaPipe Hand Landmarker" : "Ready"}</strong>
-          </div>
-          {error ? <div className="error-banner">{error}</div> : null}
-        </section>
-
+    <main className="app-shell">
+      <section className="stage" aria-label="Vision theremin performance surface">
+        <video ref={videoRef} className="camera-feed" playsInline muted />
+        <canvas ref={canvasRef} className="overlay-canvas" />
+        <SplitLine value={splitX} onChange={updateSplit} />
         <ControlPanel
           cameraReady={cameraReady}
           audioReady={audioReady}
@@ -314,26 +252,37 @@ export function App() {
           onMuteChange={setMuteEnabled}
           onWaveformChange={updateWaveform}
           onSettingsChange={updateSettings}
-          onOpenCalibration={() => {
-            setCalibrationOpen(true);
-            setCalibrationError(null);
-          }}
           onReset={resetInstrument}
         />
-
-        <CalibrationPanel
-          open={calibrationOpen}
-          step={calibrationStep}
-          calibration={calibration}
-          canCapture={canCaptureCalibration}
-          error={calibrationError}
-          onCapture={captureCalibration}
-          onClose={() => setCalibrationOpen(false)}
-          onReset={resetCalibration}
-        />
-      </main>
-    </TooltipProvider>
+        {error ? <div className="error-banner">{error}</div> : null}
+      </section>
+    </main>
   );
+}
+
+function SplitLine({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number | readonly number[]) => void;
+}) {
+  return (
+    <Slider
+      aria-label="Split line"
+      className="split-slider"
+      min={18}
+      max={82}
+      step={1}
+      value={[value * 100]}
+      onValueChange={onChange}
+    />
+  );
+}
+
+function loadSplitX(): number {
+  const parsed = Number(localStorage.getItem(SPLIT_STORAGE_KEY));
+  return Number.isFinite(parsed) ? Math.min(Math.max(parsed, 0.18), 0.82) : DEFAULT_SPLIT_X;
 }
 
 function toUserError(error: unknown): string {

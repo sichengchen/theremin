@@ -1,13 +1,8 @@
-import {
-  ChevronDown,
-  FlipHorizontal,
-  RefreshCcw,
-} from "lucide-react";
+import { ChevronDown, RefreshCcw } from "lucide-react";
 import type { Waveform } from "../audio/ThereminSynth";
 import {
   DEFAULT_MAPPING_SETTINGS,
   type MappingSettings,
-  type PitchSide,
 } from "../mapping/controlMapping";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +28,6 @@ export interface ControlPanelProps {
   onMuteChange: (muted: boolean) => void;
   onWaveformChange: (waveform: Waveform) => void;
   onSettingsChange: (settings: MappingSettings) => void;
-  onOpenCalibration: () => void;
   onReset: () => void;
 }
 
@@ -54,98 +48,77 @@ export function ControlPanel({
   onMuteChange,
   onWaveformChange,
   onSettingsChange,
-  onOpenCalibration,
   onReset,
 }: ControlPanelProps) {
   return (
-    <aside className="control-rail" aria-label="Instrument controls">
-      <Card className="instrument-panel">
-        <CardHeader className="instrument-panel-header">
-          <div>
-            <CardTitle className="text-lg font-semibold tracking-normal">Controls</CardTitle>
-            <p className="panel-subtitle">{handCount}/2 hands</p>
-          </div>
-        </CardHeader>
+    <Card size="sm" className="control-dock" aria-label="Instrument controls">
+      <CardHeader className="control-dock-header">
+        <div>
+          <CardTitle>Controls</CardTitle>
+          <p>{handCount}/2 hands</p>
+        </div>
+        <Button variant="ghost" size="icon-sm" aria-label="Reset controls" onClick={onReset}>
+          <RefreshCcw />
+        </Button>
+      </CardHeader>
 
-        <CardContent className="instrument-panel-content">
-          <section className="switch-stack" aria-label="Performance toggles">
-            <SwitchRow label="Camera" checked={cameraReady} onCheckedChange={onCameraChange} />
-            <SwitchRow label="Audio" checked={audioReady} onCheckedChange={onAudioChange} />
-            <SwitchRow label="Mute" checked={muted} disabled={!audioReady} onCheckedChange={onMuteChange} />
-          </section>
+      <CardContent className="control-dock-content">
+        <section className="switch-grid" aria-label="Input and audio">
+          <SwitchRow label="Camera" checked={cameraReady} onCheckedChange={onCameraChange} />
+          <SwitchRow label="Audio" checked={audioReady} onCheckedChange={onAudioChange} />
+          <SwitchRow label="Mute" checked={muted} disabled={!audioReady} onCheckedChange={onMuteChange} />
+        </section>
 
-          <section className="primary-meters" aria-label="Live meters">
-            <Meter label="Pitch" value={formatFrequency(frequency)} ratio={frequencyRatio(frequency, settings)} />
-            <Meter label="Volume" value={`${Math.round(gain * 100)}%`} ratio={gain} />
-          </section>
+        <section className="meter-grid" aria-label="Live meters">
+          <Meter label="Pitch" value={formatFrequency(frequency)} ratio={frequencyRatio(frequency, settings)} />
+          <Meter label="Volume" value={`${Math.round(gain * 100)}%`} ratio={gain} />
+        </section>
 
-          <section className="compact-fields" aria-label="Tone controls">
-            <SelectRow
-              label="Waveform"
-              value={waveform}
-              onValueChange={(value) => onWaveformChange(value as Waveform)}
-              options={WAVEFORMS}
+        <SelectRow
+          label="Waveform"
+          value={waveform}
+          onValueChange={(value) => onWaveformChange(value as Waveform)}
+          options={WAVEFORMS}
+        />
+
+        <Collapsible className="fine-tune-panel" defaultOpen={false}>
+          <CollapsibleTrigger className="fine-tune-trigger">
+            <span>Fine tune</span>
+            <ChevronDown className="size-4" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="fine-tune-content">
+            <SliderRow
+              label="Smoothing"
+              value={settings.smoothing}
+              min={0.15}
+              max={0.92}
+              step={0.01}
+              format={(value) => `${Math.round(value * 100)}%`}
+              onChange={(smoothing) => onSettingsChange({ ...settings, smoothing })}
             />
-            <SelectRow
-              label="Pitch side"
-              value={settings.pitchSide}
-              onValueChange={(value) =>
-                onSettingsChange({ ...settings, pitchSide: value as PitchSide })
-              }
-              options={["right", "left"]}
+            <SliderRow
+              label="Sensitivity"
+              value={settings.sensitivity}
+              min={0.55}
+              max={1.65}
+              step={0.01}
+              format={(value) => value.toFixed(2)}
+              onChange={(sensitivity) => onSettingsChange({ ...settings, sensitivity })}
             />
-          </section>
-
-          <Collapsible className="advanced-panel">
-            <CollapsibleTrigger className="advanced-trigger">
-              <span>Fine tune</span>
-              <ChevronDown className="size-4" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="advanced-content">
-              <SliderRow
-                label="Smoothing"
-                value={settings.smoothing}
-                min={0.15}
-                max={0.92}
-                step={0.01}
-                format={(value) => `${Math.round(value * 100)}%`}
-                onChange={(smoothing) => onSettingsChange({ ...settings, smoothing })}
-              />
-              <SliderRow
-                label="Sensitivity"
-                value={settings.sensitivity}
-                min={0.55}
-                max={1.65}
-                step={0.01}
-                format={(value) => value.toFixed(2)}
-                onChange={(sensitivity) => onSettingsChange({ ...settings, sensitivity })}
-              />
-              <SliderRow
-                label="Max note"
-                value={settings.maxFrequency}
-                min={880}
-                max={3520}
-                step={10}
-                format={formatFrequency}
-                onChange={(maxFrequency) => onSettingsChange({ ...settings, maxFrequency })}
-              />
-              <Meter label="Confidence" value={`${Math.round(confidence * 100)}%`} ratio={confidence} />
-            </CollapsibleContent>
-          </Collapsible>
-
-          <section className="secondary-actions" aria-label="Calibration">
-            <Button variant="outline" size="default" className="justify-start" onClick={onOpenCalibration}>
-              <FlipHorizontal />
-              Calibrate
-            </Button>
-            <Button variant="ghost" size="default" className="justify-start" onClick={onReset}>
-              <RefreshCcw />
-              Reset
-            </Button>
-          </section>
-        </CardContent>
-      </Card>
-    </aside>
+            <SliderRow
+              label="Max note"
+              value={settings.maxFrequency}
+              min={880}
+              max={3520}
+              step={10}
+              format={formatFrequency}
+              onChange={(maxFrequency) => onSettingsChange({ ...settings, maxFrequency })}
+            />
+            <Meter label="Confidence" value={`${Math.round(confidence * 100)}%`} ratio={confidence} />
+          </CollapsibleContent>
+        </Collapsible>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -182,10 +155,8 @@ function SelectRow<TValue extends string>({
   onValueChange: (value: TValue) => void;
 }) {
   return (
-    <div className="field-row">
-      <div>
-        <span>{label}</span>
-      </div>
+    <div className="select-row">
+      <Label>{label}</Label>
       <Select value={value} onValueChange={(next) => onValueChange(next as TValue)}>
         <SelectTrigger className="w-36 justify-between" aria-label={label}>
           <SelectValue />

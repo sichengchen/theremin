@@ -1,5 +1,4 @@
 import type { ControlState } from "../mapping/controlMapping";
-import type { Calibration } from "../mapping/calibration";
 import type { VisionFrame } from "../vision/handTypes";
 
 const HAND_CONNECTIONS = [
@@ -30,7 +29,7 @@ export function renderOverlay(
   canvas: HTMLCanvasElement,
   frame: VisionFrame | null,
   control: ControlState | null,
-  calibration: Calibration,
+  splitX: number,
 ): void {
   const rect = canvas.getBoundingClientRect();
   const width = Math.max(Math.round(rect.width * window.devicePixelRatio), 1);
@@ -48,12 +47,12 @@ export function renderOverlay(
 
   context.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
   context.clearRect(0, 0, rect.width, rect.height);
+  drawColumns(context, rect.width, rect.height, splitX);
+
   if (!frame) {
-    drawCenteredText(context, rect.width, rect.height, "Start camera to play");
+    drawCenteredText(context, rect.width, rect.height, "Camera off");
     return;
   }
-
-  drawZones(context, rect.width, rect.height, calibration, control);
 
   for (const hand of frame.hands) {
     const isPitch = control?.pitchHand === hand;
@@ -81,59 +80,27 @@ export function renderOverlay(
       context.arc(landmark.x * rect.width, landmark.y * rect.height, 3.5, 0, Math.PI * 2);
       context.fill();
     }
-
-    context.fillStyle = "rgba(7, 10, 14, 0.72)";
-    context.fillRect(hand.center.x * rect.width + 10, hand.center.y * rect.height - 18, 96, 28);
-    context.fillStyle = "#ffffff";
-    context.font = "12px Inter, system-ui, sans-serif";
-    context.fillText(
-      isPitch ? "Pitch" : isVolume ? "Volume" : hand.handedness,
-      hand.center.x * rect.width + 18,
-      hand.center.y * rect.height,
-    );
   }
 }
 
-function drawZones(
+function drawColumns(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
-  calibration: Calibration,
-  control: ControlState | null,
+  splitX: number,
 ): void {
-  const pitchMin = calibration.pitchMinX * width;
-  const pitchMax = calibration.pitchMaxX * width;
-  const volumeMin = calibration.volumeMinY * height;
-  const volumeMax = calibration.volumeMaxY * height;
+  const split = Math.min(Math.max(splitX, 0.18), 0.82) * width;
 
   context.save();
-  context.globalAlpha = 0.9;
-  context.strokeStyle = "rgba(119, 225, 255, 0.62)";
-  context.lineWidth = 2;
-  context.setLineDash([7, 7]);
-  context.beginPath();
-  context.moveTo(pitchMin, 0);
-  context.lineTo(pitchMin, height);
-  context.moveTo(pitchMax, 0);
-  context.lineTo(pitchMax, height);
-  context.stroke();
+  context.fillStyle = "rgba(243, 201, 105, 0.1)";
+  context.fillRect(0, 0, split, height);
+  context.fillStyle = "rgba(119, 225, 255, 0.1)";
+  context.fillRect(split, 0, width - split, height);
 
-  context.strokeStyle = "rgba(243, 201, 105, 0.7)";
-  context.beginPath();
-  context.moveTo(0, volumeMin);
-  context.lineTo(width, volumeMin);
-  context.moveTo(0, volumeMax);
-  context.lineTo(width, volumeMax);
-  context.stroke();
-  context.setLineDash([]);
-
-  if (control) {
-    context.fillStyle = "rgba(119, 225, 255, 0.18)";
-    context.fillRect(pitchMin, 0, Math.max(pitchMax - pitchMin, 1), height);
-    context.fillStyle = "rgba(243, 201, 105, 0.14)";
-    context.fillRect(0, volumeMax, width, Math.max(volumeMin - volumeMax, 1));
-  }
-
+  context.fillStyle = "rgba(255, 255, 255, 0.72)";
+  context.font = "700 12px Inter, system-ui, sans-serif";
+  context.fillText("VOLUME", 24, 34);
+  context.fillText("PITCH", split + 24, 34);
   context.restore();
 }
 
@@ -143,7 +110,7 @@ function drawCenteredText(
   height: number,
   text: string,
 ): void {
-  context.fillStyle = "rgba(255, 255, 255, 0.86)";
+  context.fillStyle = "rgba(255, 255, 255, 0.78)";
   context.font = "600 18px Inter, system-ui, sans-serif";
   context.textAlign = "center";
   context.fillText(text, width / 2, height / 2);
