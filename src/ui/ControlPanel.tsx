@@ -1,3 +1,11 @@
+import {
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { ChevronDown, RefreshCcw } from "lucide-react";
 import {
   formatPitch,
@@ -37,6 +45,16 @@ const WAVEFORMS: Waveform[] = ["sine", "triangle", "sawtooth", "square"];
 const LOWEST_PITCH_MIDI = 24;
 const HIGHEST_PITCH_MIDI = 108;
 const MIN_PITCH_SPAN = 1;
+const CONTROL_CORNER_STORAGE_KEY = "vision-theremin-control-corner-v1";
+const CONTROL_DOCK_MARGIN = 16;
+
+type ControlCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+type DragMode = "idle" | "dragging" | "snapping";
+
+interface Position {
+  x: number;
+  y: number;
+}
 
 export function ControlPanel({
   cameraReady,
@@ -55,15 +73,142 @@ export function ControlPanel({
 }: ControlPanelProps) {
   const lowPitchMidi = frequencyToMidi(settings.minFrequency);
   const highPitchMidi = frequencyToMidi(settings.maxFrequency);
+  const dockRef = useRef<HTMLDivElement | null>(null);
+  const dragOffsetRef = useRef<Position>({ x: 0, y: 0 });
+  const dragPositionRef = useRef<Position | null>(null);
+  const dragModeRef = useRef<DragMode>("idle");
+  const snapTimerRef = useRef<number | null>(null);
+  const [corner, setCorner] = useState<ControlCorner>(loadControlCorner);
+  const [dragMode, setDragMode] = useState<DragMode>("idle");
+  const [dragPosition, setDragPositionState] = useState<Position | null>(null);
+
+  const setDragPosition = useCallback((position: Position | null) => {
+    dragPositionRef.current = position;
+    setDragPositionState(position);
+  }, []);
+
+  const updateDragMode = useCallback((mode: DragMode) => {
+    dragModeRef.current = mode;
+    setDragMode(mode);
+  }, []);
+
+  const beginDrag = useCallback(
+    (event: ReactPointerEvent<HTMLElement>) => {
+      if ((event.target as Element).closest("[data-drag-exempt]")) {
+        return;
+      }
+
+      const dock = dockRef.current;
+      const stage = dock?.parentElement;
+      if (!dock || !stage) {
+        return;
+      }
+
+      const dockRect = dock.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      const startPosition = {
+        x: dockRect.left - stageRect.left,
+        y: dockRect.top - stageRect.top,
+      };
+
+      window.clearTimeout(snapTimerRef.current ?? undefined);
+      dragOffsetRef.current = {
+        x: event.clientX - dockRect.left,
+        y: event.clientY - dockRect.top,
+      };
+      setDragPosition(startPosition);
+      updateDragMode("dragging");
+      event.preventDefault();
+    },
+    [setDragPosition, updateDragMode],
+  );
+
+  useEffect(() => {
+    const move = (event: PointerEvent) => {
+      if (dragModeRef.current !== "dragging") {
+        return;
+      }
+
+      const dock = dockRef.current;
+      const stage = dock?.parentElement;
+      if (!dock || !stage) {
+        return;
+      }
+
+      const dockRect = dock.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      const margin = getDockMargin();
+      const next = {
+        x: event.clientX - stageRect.left - dragOffsetRef.current.x,
+        y: event.clientY - stageRect.top - dragOffsetRef.current.y,
+      };
+
+      setDragPosition({
+        x: clamp(next.x, margin, Math.max(margin, stageRect.width - dockRect.width - margin)),
+        y: clamp(next.y, margin, Math.max(margin, stageRect.height - dockRect.height - margin)),
+      });
+      event.preventDefault();
+    };
+
+    const stop = () => {
+      if (dragModeRef.current !== "dragging") {
+        return;
+      }
+
+      const dock = dockRef.current;
+      const stage = dock?.parentElement;
+      const position = dragPositionRef.current;
+      if (!dock || !stage || !position) {
+        setDragPosition(null);
+        updateDragMode("idle");
+        return;
+      }
+
+      const dockRect = dock.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      const nextCorner = nearestCorner(position, dockRect, stageRect);
+      const target = cornerPosition(nextCorner, dockRect, stageRect);
+
+      setCorner(nextCorner);
+      saveControlCorner(nextCorner);
+      updateDragMode("snapping");
+      setDragPosition(target);
+      window.clearTimeout(snapTimerRef.current ?? undefined);
+      snapTimerRef.current = window.setTimeout(() => {
+        setDragPosition(null);
+        updateDragMode("idle");
+      }, 240);
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+      window.clearTimeout(snapTimerRef.current ?? undefined);
+    };
+  }, [setDragPosition, updateDragMode]);
 
   return (
-    <Card size="sm" className="control-dock" aria-label="Instrument controls">
-      <CardHeader className="control-dock-header">
+    <Card
+      ref={dockRef}
+      size="sm"
+      className="control-dock"
+      aria-label="Instrument controls"
+      data-corner={corner}
+      data-dragging={dragMode === "dragging" ? "true" : undefined}
+      data-snapping={dragMode === "snapping" ? "true" : undefined}
+      style={dragPosition ? dockDragStyle(dragPosition) : undefined}
+    >
+      <CardHeader className="control-dock-header" onPointerDown={beginDrag}>
         <div>
           <CardTitle>Controls</CardTitle>
           <p>{handCount}/2 hands</p>
         </div>
-        <Button variant="ghost" size="icon-sm" aria-label="Reset controls" onClick={onReset}>
+        <Button data-drag-exempt variant="ghost" size="icon-sm" aria-label="Reset controls" onClick={onReset}>
           <RefreshCcw />
         </Button>
       </CardHeader>
@@ -274,4 +419,54 @@ function frequencyRatio(value: number, settings: MappingSettings): number {
   }
 
   return Math.max(0, Math.min(1, Math.log(value / settings.minFrequency) / denominator));
+}
+
+function dockDragStyle(position: Position): CSSProperties {
+  return {
+    bottom: "auto",
+    left: `${position.x}px`,
+    right: "auto",
+    top: `${position.y}px`,
+  };
+}
+
+function getDockMargin(): number {
+  return window.matchMedia("(max-width: 640px)").matches ? 12 : CONTROL_DOCK_MARGIN;
+}
+
+function nearestCorner(position: Position, dockRect: DOMRect, stageRect: DOMRect): ControlCorner {
+  const centerX = position.x + dockRect.width / 2;
+  const centerY = position.y + dockRect.height / 2;
+  const vertical = centerY < stageRect.height / 2 ? "top" : "bottom";
+  const horizontal = centerX < stageRect.width / 2 ? "left" : "right";
+
+  return `${vertical}-${horizontal}` as ControlCorner;
+}
+
+function cornerPosition(corner: ControlCorner, dockRect: DOMRect, stageRect: DOMRect): Position {
+  const margin = getDockMargin();
+  const x = corner.endsWith("left") ? margin : stageRect.width - dockRect.width - margin;
+  const y = corner.startsWith("top") ? margin : stageRect.height - dockRect.height - margin;
+
+  return {
+    x: clamp(x, margin, Math.max(margin, stageRect.width - dockRect.width - margin)),
+    y: clamp(y, margin, Math.max(margin, stageRect.height - dockRect.height - margin)),
+  };
+}
+
+function loadControlCorner(): ControlCorner {
+  const stored = localStorage.getItem(CONTROL_CORNER_STORAGE_KEY);
+  return isControlCorner(stored) ? stored : "top-right";
+}
+
+function saveControlCorner(corner: ControlCorner): void {
+  localStorage.setItem(CONTROL_CORNER_STORAGE_KEY, corner);
+}
+
+function isControlCorner(value: string | null): value is ControlCorner {
+  return value === "top-left" || value === "top-right" || value === "bottom-left" || value === "bottom-right";
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }
