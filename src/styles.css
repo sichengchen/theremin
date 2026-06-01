@@ -273,19 +273,17 @@ button:not(:disabled) {
 .switch-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 14px;
 }
 
 .switch-row,
 .select-row {
   display: flex;
-  min-height: 34px;
+  min-height: 32px;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  border: 1px solid color-mix(in oklch, var(--border), transparent 24%);
-  border-radius: var(--radius-md);
-  padding: 0 9px;
+  gap: 12px;
+  padding: 0;
 }
 
 .switch-row[data-disabled="true"] {
