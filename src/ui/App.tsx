@@ -27,7 +27,7 @@ const INITIAL_METRICS: LiveMetrics = {
   confidence: 0,
 };
 
-const SPLIT_STORAGE_KEY = "vision-theremin-split-x-v1";
+const SPLIT_STORAGE_KEY = "vision-theremin-split-x-v3";
 
 export function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -375,7 +375,12 @@ function SplitLine({
 }
 
 function loadSplitX(): number {
-  const parsed = Number(localStorage.getItem(SPLIT_STORAGE_KEY));
+  const stored = localStorage.getItem(SPLIT_STORAGE_KEY);
+  if (stored === null) {
+    return DEFAULT_SPLIT_X;
+  }
+
+  const parsed = Number(stored);
   return Number.isFinite(parsed) ? clampSplit(parsed) : DEFAULT_SPLIT_X;
 }
 

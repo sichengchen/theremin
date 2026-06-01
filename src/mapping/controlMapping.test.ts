@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
   DEFAULT_MAPPING_SETTINGS,
+  DEFAULT_SPLIT_X,
   assignControlHands,
   mapHandsToControls,
 } from "./controlMapping";
 import type { Landmark, TrackedHand } from "../vision/handTypes";
 
 describe("control mapping", () => {
+  it("defaults the volume region to one third of the stage", () => {
+    expect(DEFAULT_SPLIT_X).toBe(1 / 3);
+  });
+
   it("assigns pitch and volume by split region", () => {
     const left = handAt(0.2, 0.5, "Left");
     const right = handAt(0.8, 0.5, "Right");

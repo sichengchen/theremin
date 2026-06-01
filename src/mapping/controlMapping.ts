@@ -36,7 +36,7 @@ export const DEFAULT_MAPPING_SETTINGS: MappingSettings = {
   vibratoRate: 5.4,
 };
 
-export const DEFAULT_SPLIT_X = 0.5;
+export const DEFAULT_SPLIT_X = 1 / 3;
 
 export function assignControlHands(
   hands: TrackedHand[],
