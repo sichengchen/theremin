@@ -205,7 +205,7 @@ export function ControlPanel({
     >
       <CardHeader className="control-dock-header" onPointerDown={beginDrag}>
         <div>
-          <CardTitle>Controls</CardTitle>
+          <CardTitle>Air Theremin</CardTitle>
           <p>{handCount}/2 hands</p>
         </div>
         <Button data-drag-exempt variant="ghost" size="icon-sm" aria-label="Reset controls" onClick={onReset}>
