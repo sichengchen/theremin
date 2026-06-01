@@ -43,10 +43,10 @@ export interface ControlPanelProps {
 
 const WAVEFORMS: Waveform[] = ["sine", "triangle", "sawtooth", "square"];
 const WAVEFORM_LABELS: Partial<Record<Waveform, string>> = {
-  sawtooth: "SAWTOOTH",
-  sine: "SINE",
-  square: "SQUARE",
-  triangle: "TRIANGLE",
+  sawtooth: "Sawtooth",
+  sine: "Sine",
+  square: "Square",
+  triangle: "Triangle",
 };
 const LOWEST_PITCH_MIDI = 24;
 const HIGHEST_PITCH_MIDI = 108;
