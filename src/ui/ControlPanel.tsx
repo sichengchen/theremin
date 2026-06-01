@@ -1,7 +1,11 @@
 import { ChevronDown, RefreshCcw } from "lucide-react";
+import {
+  formatPitch,
+  frequencyToMidi,
+  midiToFrequency,
+} from "../audio/notes";
 import type { Waveform } from "../audio/ThereminSynth";
 import {
-  DEFAULT_MAPPING_SETTINGS,
   type MappingSettings,
 } from "../mapping/controlMapping";
 import { Button } from "@/components/ui/button";
@@ -30,6 +34,9 @@ export interface ControlPanelProps {
 }
 
 const WAVEFORMS: Waveform[] = ["sine", "triangle", "sawtooth", "square"];
+const LOWEST_PITCH_MIDI = 24;
+const HIGHEST_PITCH_MIDI = 108;
+const MIN_PITCH_SPAN = 1;
 
 export function ControlPanel({
   cameraReady,
@@ -46,6 +53,9 @@ export function ControlPanel({
   onSettingsChange,
   onReset,
 }: ControlPanelProps) {
+  const lowPitchMidi = frequencyToMidi(settings.minFrequency);
+  const highPitchMidi = frequencyToMidi(settings.maxFrequency);
+
   return (
     <Card size="sm" className="control-dock" aria-label="Instrument controls">
       <CardHeader className="control-dock-header">
@@ -65,7 +75,7 @@ export function ControlPanel({
         </section>
 
         <section className="meter-grid" aria-label="Live meters">
-          <Meter label="Pitch" value={formatFrequency(frequency)} ratio={frequencyRatio(frequency, settings)} />
+          <Meter label="Pitch" value={formatPitch(frequency)} ratio={frequencyRatio(frequency, settings)} />
           <Meter label="Volume" value={`${Math.round(volume * 100)}%`} ratio={volume} />
         </section>
 
@@ -100,14 +110,29 @@ export function ControlPanel({
               format={(value) => value.toFixed(2)}
               onChange={(sensitivity) => onSettingsChange({ ...settings, sensitivity })}
             />
-            <SliderRow
-              label="Max note"
-              value={settings.maxFrequency}
-              min={880}
-              max={3520}
-              step={10}
-              format={formatFrequency}
-              onChange={(maxFrequency) => onSettingsChange({ ...settings, maxFrequency })}
+            <PitchLimitRow
+              label="Low note"
+              value={lowPitchMidi}
+              min={LOWEST_PITCH_MIDI}
+              max={HIGHEST_PITCH_MIDI}
+              onChange={(midi) =>
+                onSettingsChange({
+                  ...settings,
+                  minFrequency: midiToFrequency(Math.min(midi, highPitchMidi - MIN_PITCH_SPAN)),
+                })
+              }
+            />
+            <PitchLimitRow
+              label="High note"
+              value={highPitchMidi}
+              min={LOWEST_PITCH_MIDI}
+              max={HIGHEST_PITCH_MIDI}
+              onChange={(midi) =>
+                onSettingsChange({
+                  ...settings,
+                  maxFrequency: midiToFrequency(Math.max(midi, lowPitchMidi + MIN_PITCH_SPAN)),
+                })
+              }
             />
             <Meter label="Confidence" value={`${Math.round(confidence * 100)}%`} ratio={confidence} />
           </CollapsibleContent>
@@ -168,6 +193,34 @@ function SelectRow<TValue extends string>({
   );
 }
 
+function PitchLimitRow({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (midi: number) => void;
+}) {
+  const safeValue = Math.min(Math.max(value, min), max);
+
+  return (
+    <SliderRow
+      label={label}
+      value={safeValue}
+      min={min}
+      max={max}
+      step={1}
+      format={(midi) => formatPitch(midiToFrequency(midi))}
+      onChange={(midi) => onChange(Math.round(midi))}
+    />
+  );
+}
+
 function SliderRow({
   label,
   value,
@@ -214,13 +267,11 @@ function Meter({ label, value, ratio }: { label: string; value: string; ratio: n
   );
 }
 
-function formatFrequency(value: number): string {
-  return value >= 1000 ? `${(value / 1000).toFixed(2)} kHz` : `${Math.round(value)} Hz`;
-}
-
 function frequencyRatio(value: number, settings: MappingSettings): number {
-  return (
-    Math.log(value / settings.minFrequency) /
-    Math.log(settings.maxFrequency / settings.minFrequency || DEFAULT_MAPPING_SETTINGS.maxFrequency)
-  );
+  const denominator = Math.log(settings.maxFrequency / settings.minFrequency);
+  if (!Number.isFinite(denominator) || denominator <= 0) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(1, Math.log(value / settings.minFrequency) / denominator));
 }
