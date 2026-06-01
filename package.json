@@ -1,0 +1,33 @@
+{
+  "name": "vision-theremin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "tsc -b && vp build",
+    "check": "tsc -b && vp test",
+    "test": "vp test",
+    "preview": "vp preview",
+    "fetch:model": "node scripts/fetch-mediapipe-model.mjs",
+    "postinstall": "node scripts/copy-mediapipe-assets.mjs"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "latest",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@playwright/test": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "jsdom": "latest",
+    "typescript": "latest",
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+    "vite-plus": "latest",
+    "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+  }
+}
