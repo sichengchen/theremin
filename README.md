@@ -1,8 +1,18 @@
 # Air Theremin
 
-A browser-based theremin controlled with hand tracking. The app uses your webcam to map hand movement to pitch and volume, then plays sound through the Web Audio API.
+A browser-based Theremin controlled with hand tracking. The app uses your webcam to map hand movement to pitch and volume, then plays sound, just like a Theremin.
 
-## Getting Started
+[Start Playing](https://theremin.scchan.moe)
+
+## Playing
+
+- Turn on Camera and Audio in the control panel.
+- Use your left hand for volume.
+- Use your right hand for pitch.
+- Drag the vertical divider to adjust the hand zones.
+- Open More to change smoothing, sensitivity, waveform, and pitch range.
+
+## Development
 
 Install dependencies:
 
@@ -17,14 +27,6 @@ pnpm dev
 ```
 
 Then open the local URL shown in the terminal and allow camera access.
-
-## Playing
-
-- Turn on Camera and Audio in the control panel.
-- Use your left hand for volume.
-- Use your right hand for pitch.
-- Drag the vertical divider to adjust the hand zones.
-- Open More to change smoothing, sensitivity, waveform, and pitch range.
 
 ## Scripts
 
