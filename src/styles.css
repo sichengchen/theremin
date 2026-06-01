@@ -47,9 +47,9 @@
   --liquid-glass-glow: rgba(171, 222, 231, 0.26);
   --liquid-glass-shadow: rgba(0, 0, 0, 0.42);
   --liquid-glass-filter: blur(24px) saturate(1.45);
-  --liquid-glass-text: rgba(248, 253, 255, 0.95);
-  --liquid-glass-text-soft: rgba(218, 244, 250, 0.82);
-  --liquid-glass-text-dim: rgba(186, 230, 239, 0.68);
+  --liquid-glass-text: #ffffff;
+  --liquid-glass-text-soft: #ffffff;
+  --liquid-glass-text-dim: #ffffff;
   --sidebar: oklch(0.987 0.002 197.1);
   --sidebar-foreground: oklch(0.148 0.004 228.8);
   --sidebar-primary: oklch(0.218 0.008 223.9);
@@ -134,7 +134,7 @@ button:not(:disabled) {
 .zone-label {
   position: absolute;
   top: 24px;
-  color: rgba(255, 255, 255, 0.72);
+  color: #ffffff;
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
