@@ -41,6 +41,19 @@ describe("control mapping", () => {
     expect(assignControlHands([left, right], 0.5, swapped).pitchHand).toBe(left);
   });
 
+  it("swaps fallback regions when hand roles are reversed", () => {
+    const unknownLeft = handAt(0.2, 0.5, "Unknown");
+    const unknownRight = handAt(0.8, 0.5, "Unknown");
+    const swapped = {
+      ...DEFAULT_MAPPING_SETTINGS,
+      volumeHand: "Right" as const,
+      pitchHand: "Left" as const,
+    };
+
+    expect(assignControlHands([unknownLeft, unknownRight], 0.5, swapped).pitchHand).toBe(unknownLeft);
+    expect(assignControlHands([unknownLeft, unknownRight], 0.5, swapped).volumeHand).toBe(unknownRight);
+  });
+
   it("maps pitch logarithmically across the pitch region", () => {
     const pitch = handAt(0.98, 0.5, "Right");
     const volume = handAt(0.2, 0.05, "Left");
@@ -49,6 +62,25 @@ describe("control mapping", () => {
     expect(control.frequency).toBeGreaterThan(DEFAULT_MAPPING_SETTINGS.maxFrequency * 0.95);
     expect(control.gain).toBeGreaterThan(0.7);
     expect(control.gate).toBe(true);
+  });
+
+  it("maps pitch across the left region when hand roles are reversed", () => {
+    const lowPitch = handAt(0.02, 0.5, "Left");
+    const highPitch = handAt(0.5, 0.5, "Left");
+    const volume = handAt(0.8, 0.05, "Right");
+    const swapped = {
+      ...DEFAULT_MAPPING_SETTINGS,
+      volumeHand: "Right" as const,
+      pitchHand: "Left" as const,
+    };
+
+    const lowControl = mapHandsToControls([lowPitch, volume], swapped, 0.5);
+    const highControl = mapHandsToControls([highPitch, volume], swapped, 0.5);
+
+    expect(lowControl.frequency).toBeLessThan(DEFAULT_MAPPING_SETTINGS.minFrequency * 1.05);
+    expect(highControl.frequency).toBeGreaterThan(DEFAULT_MAPPING_SETTINGS.maxFrequency * 0.95);
+    expect(highControl.pitch01).toBeGreaterThan(lowControl.pitch01);
+    expect(highControl.gate).toBe(true);
   });
 
   it("gates audio when both hands are not available", () => {
@@ -81,7 +113,7 @@ describe("control mapping", () => {
   });
 });
 
-function handAt(x: number, y: number, handedness: "Left" | "Right"): TrackedHand {
+function handAt(x: number, y: number, handedness: TrackedHand["handedness"]): TrackedHand {
   const landmarks = Array.from({ length: 21 }, (_, index): Landmark => {
     const spread = index / 20;
     return {

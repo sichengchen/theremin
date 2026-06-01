@@ -4,6 +4,7 @@ import { ThereminSynth, type Waveform } from "../audio/ThereminSynth";
 import {
   DEFAULT_MAPPING_SETTINGS,
   DEFAULT_SPLIT_X,
+  areControlZonesReversed,
   mapHandsToControls,
   type ControlState,
   type MappingSettings,
@@ -238,6 +239,7 @@ export function App() {
     <main className="app-shell">
       <section
         className="stage"
+        data-zones-reversed={areControlZonesReversed(settings) ? "true" : undefined}
         style={{ "--split-x": `${splitX * 100}%` } as CSSProperties}
         aria-label="Vision theremin performance surface"
       >

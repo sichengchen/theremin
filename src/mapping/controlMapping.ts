@@ -44,6 +44,10 @@ export const DEFAULT_MAPPING_SETTINGS: MappingSettings = {
 
 export const DEFAULT_SPLIT_X = 1 / 3;
 
+export function areControlZonesReversed(settings: Pick<MappingSettings, "volumeHand" | "pitchHand">): boolean {
+  return settings.volumeHand === "Right" && settings.pitchHand === "Left";
+}
+
 export function assignControlHands(
   hands: TrackedHand[],
   splitX = DEFAULT_SPLIT_X,
@@ -54,8 +58,13 @@ export function assignControlHands(
   }
 
   const split = clamp(splitX, 0.18, 0.82);
-  const volumeFallback = hands.filter((hand) => hand.handedness === "Unknown" && hand.center.x < split);
-  const pitchFallback = hands.filter((hand) => hand.handedness === "Unknown" && hand.center.x >= split);
+  const zonesReversed = areControlZonesReversed(settings);
+  const volumeFallback = hands.filter((hand) =>
+    hand.handedness === "Unknown" && (zonesReversed ? hand.center.x >= split : hand.center.x < split)
+  );
+  const pitchFallback = hands.filter((hand) =>
+    hand.handedness === "Unknown" && (zonesReversed ? hand.center.x < split : hand.center.x >= split)
+  );
   const volumeHand = pickAssignedHand(hands, settings.volumeHand, volumeFallback);
   const pitchHand = pickAssignedHand(hands, settings.pitchHand, pitchFallback, volumeHand);
 
@@ -74,7 +83,7 @@ export function mapHandsToControls(
   const split = clamp(splitX, 0.18, 0.82);
   const { pitchHand, volumeHand } = assignControlHands(hands, split, settings);
   const rawPitch = pitchHand
-    ? clamp(inverseLerp(split, 0.98, pitchHand.landmarks[8]?.x ?? pitchHand.center.x))
+    ? pitchPositionToUnit(pitchHand.landmarks[8]?.x ?? pitchHand.center.x, split, settings)
     : previous?.pitch01 ?? 0;
   const shapedPitch = shapeAroundCenter(rawPitch, settings.sensitivity);
   const rawVolume = volumeHand
@@ -105,6 +114,16 @@ export function mapHandsToControls(
     pitchHand,
     volumeHand,
   };
+}
+
+function pitchPositionToUnit(
+  x: number,
+  split: number,
+  settings: Pick<MappingSettings, "volumeHand" | "pitchHand">,
+): number {
+  return areControlZonesReversed(settings)
+    ? clamp(inverseLerp(0.02, split, x))
+    : clamp(inverseLerp(split, 0.98, x));
 }
 
 function shapeAroundCenter(value: number, sensitivity: number): number {

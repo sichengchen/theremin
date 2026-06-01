@@ -131,6 +131,17 @@ button:not(:disabled) {
     );
 }
 
+.stage[data-zones-reversed="true"] .zone-overlay {
+  background:
+    linear-gradient(
+      to right,
+      rgba(172, 226, 238, 0.09) 0,
+      rgba(172, 226, 238, 0.09) var(--split-x),
+      rgba(231, 224, 205, 0.08) var(--split-x),
+      rgba(231, 224, 205, 0.08) 100%
+    );
+}
+
 .split-control {
   position: absolute;
   top: 0;
