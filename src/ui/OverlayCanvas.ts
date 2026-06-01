@@ -29,7 +29,6 @@ export function renderOverlay(
   canvas: HTMLCanvasElement,
   frame: VisionFrame | null,
   control: ControlState | null,
-  splitX: number,
 ): void {
   const rect = canvas.getBoundingClientRect();
   const width = Math.max(Math.round(rect.width * window.devicePixelRatio), 1);
@@ -47,7 +46,6 @@ export function renderOverlay(
 
   context.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
   context.clearRect(0, 0, rect.width, rect.height);
-  drawColumns(context, rect.width, rect.height, splitX);
 
   if (!frame) {
     drawCenteredText(context, rect.width, rect.height, "Camera off");
@@ -81,27 +79,6 @@ export function renderOverlay(
       context.fill();
     }
   }
-}
-
-function drawColumns(
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  splitX: number,
-): void {
-  const split = Math.min(Math.max(splitX, 0.18), 0.82) * width;
-
-  context.save();
-  context.fillStyle = "rgba(243, 201, 105, 0.1)";
-  context.fillRect(0, 0, split, height);
-  context.fillStyle = "rgba(119, 225, 255, 0.1)";
-  context.fillRect(split, 0, width - split, height);
-
-  context.fillStyle = "rgba(255, 255, 255, 0.72)";
-  context.font = "700 12px Inter, system-ui, sans-serif";
-  context.fillText("VOLUME", 24, 34);
-  context.fillText("PITCH", split + 24, 34);
-  context.restore();
 }
 
 function drawCenteredText(

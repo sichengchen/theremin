@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Slider } from "@/components/ui/slider";
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { ThereminSynth, type Waveform } from "../audio/ThereminSynth";
 import {
   DEFAULT_MAPPING_SETTINGS,
@@ -151,9 +150,8 @@ export function App() {
     synthRef.current?.applySettings(DEFAULT_MAPPING_SETTINGS);
   }, []);
 
-  const updateSplit = useCallback((next: number | readonly number[]) => {
-    const raw = Array.isArray(next) ? next[0] : next;
-    const value = Math.min(Math.max((raw ?? DEFAULT_SPLIT_X * 100) / 100, 0.18), 0.82);
+  const updateSplit = useCallback((next: number) => {
+    const value = clampSplit(next);
     setSplitX(value);
     localStorage.setItem(SPLIT_STORAGE_KEY, String(value));
   }, []);
@@ -183,7 +181,7 @@ export function App() {
           frameRef.current = frame;
           controlRef.current = control;
           synthRef.current?.update(control);
-          renderOverlay(canvas, frame, control, splitX);
+          renderOverlay(canvas, frame, control);
 
           if (timestamp - lastMetricPaintRef.current > 90) {
             lastMetricPaintRef.current = timestamp;
@@ -198,7 +196,7 @@ export function App() {
           setError(toUserError(caught));
         }
       } else if (canvas) {
-        renderOverlay(canvas, frameRef.current, controlRef.current, splitX);
+        renderOverlay(canvas, frameRef.current, controlRef.current);
       }
 
       rafRef.current = window.requestAnimationFrame(tick);
@@ -224,8 +222,16 @@ export function App() {
 
   return (
     <main className="app-shell">
-      <section className="stage" aria-label="Vision theremin performance surface">
+      <section
+        className="stage"
+        style={{ "--split-x": `${splitX * 100}%` } as CSSProperties}
+        aria-label="Vision theremin performance surface"
+      >
         <video ref={videoRef} className="camera-feed" playsInline muted />
+        <div className="zone-overlay" aria-hidden="true">
+          <span className="zone-label zone-label-volume">Volume</span>
+          <span className="zone-label zone-label-pitch">Pitch</span>
+        </div>
         <canvas ref={canvasRef} className="overlay-canvas" />
         <SplitLine value={splitX} onChange={updateSplit} />
         <ControlPanel
@@ -254,24 +260,127 @@ function SplitLine({
   onChange,
 }: {
   value: number;
-  onChange: (value: number | readonly number[]) => void;
+  onChange: (value: number) => void;
 }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const draggingRef = useRef(false);
+
+  const updateFromClientX = useCallback(
+    (clientX: number) => {
+      const stage = ref.current?.parentElement;
+      if (!stage) {
+        return;
+      }
+
+      const rect = stage.getBoundingClientRect();
+      onChange(clampSplit((clientX - rect.left) / rect.width));
+    },
+    [onChange],
+  );
+
+  const nudge = useCallback(
+    (amount: number) => {
+      onChange(clampSplit(value + amount));
+    },
+    [onChange, value],
+  );
+
+  const beginDrag = useCallback(
+    (clientX: number) => {
+      draggingRef.current = true;
+      updateFromClientX(clientX);
+    },
+    [updateFromClientX],
+  );
+
+  useEffect(() => {
+    const move = (event: PointerEvent | MouseEvent) => {
+      if (draggingRef.current) {
+        event.preventDefault();
+        updateFromClientX(event.clientX);
+      }
+    };
+
+    const stop = () => {
+      draggingRef.current = false;
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", stop);
+
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", stop);
+    };
+  }, [updateFromClientX]);
+
   return (
-    <Slider
+    <div
+      ref={ref}
       aria-label="Split line"
-      className="split-slider"
-      min={18}
-      max={82}
-      step={1}
-      value={[value * 100]}
-      onValueChange={onChange}
-    />
+      aria-orientation="horizontal"
+      aria-valuemax={82}
+      aria-valuemin={18}
+      aria-valuenow={Math.round(value * 100)}
+      aria-valuetext={`${Math.round(value * 100)}%`}
+      className="split-control"
+      role="slider"
+      style={{ left: `${value * 100}%` }}
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+          event.preventDefault();
+          nudge(-0.01);
+        } else if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+          event.preventDefault();
+          nudge(0.01);
+        } else if (event.key === "PageDown") {
+          event.preventDefault();
+          nudge(-0.05);
+        } else if (event.key === "PageUp") {
+          event.preventDefault();
+          nudge(0.05);
+        } else if (event.key === "Home") {
+          event.preventDefault();
+          onChange(0.18);
+        } else if (event.key === "End") {
+          event.preventDefault();
+          onChange(0.82);
+        }
+      }}
+      onMouseDown={(event) => {
+        event.preventDefault();
+        beginDrag(event.clientX);
+      }}
+      onPointerDown={(event) => {
+        event.preventDefault();
+        try {
+          event.currentTarget.setPointerCapture(event.pointerId);
+        } catch {
+          // Browser automation and older input paths may not expose pointer capture.
+        }
+        beginDrag(event.clientX);
+      }}
+    >
+      <span className="split-control-line" />
+      <span className="split-control-grip" />
+    </div>
   );
 }
 
 function loadSplitX(): number {
   const parsed = Number(localStorage.getItem(SPLIT_STORAGE_KEY));
-  return Number.isFinite(parsed) ? Math.min(Math.max(parsed, 0.18), 0.82) : DEFAULT_SPLIT_X;
+  return Number.isFinite(parsed) ? clampSplit(parsed) : DEFAULT_SPLIT_X;
+}
+
+function clampSplit(value: number): number {
+  return Math.min(Math.max(value, 0.18), 0.82);
 }
 
 function toUserError(error: unknown): string {
