@@ -1,12 +1,9 @@
 import {
-  AudioLines,
   Camera,
+  ChevronDown,
   FlipHorizontal,
-  Gauge,
-  Hand,
   Play,
   RefreshCcw,
-  SlidersHorizontal,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -16,12 +13,10 @@ import {
   type MappingSettings,
   type PitchSide,
 } from "../mapping/controlMapping";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -64,31 +59,23 @@ export function ControlPanel({
   onOpenCalibration,
   onReset,
 }: ControlPanelProps) {
+  const stateLine = [
+    cameraReady ? "camera ready" : "camera off",
+    audioReady && !muted ? "audio armed" : muted ? "muted" : "audio off",
+    `${handCount}/2 hands`,
+  ].join(" · ");
+
   return (
     <aside className="control-rail" aria-label="Instrument controls">
       <Card className="instrument-panel">
         <CardHeader className="instrument-panel-header">
           <div>
-            <CardTitle className="text-lg font-semibold tracking-normal">Instrument</CardTitle>
-            <p className="panel-subtitle">Live controls</p>
+            <CardTitle className="text-lg font-semibold tracking-normal">Theremin</CardTitle>
+            <p className="panel-subtitle">{stateLine}</p>
           </div>
-          <Badge variant={handCount === 2 ? "default" : "outline"} className="gap-1">
-            <Hand className="size-3" />
-            {handCount}/2
-          </Badge>
         </CardHeader>
 
         <CardContent className="instrument-panel-content">
-          <section className="status-grid" aria-label="Status">
-            <StatusPill active={cameraReady} icon={<Camera />} label={cameraReady ? "Camera ready" : "Camera off"} />
-            <StatusPill
-              active={audioReady && !muted}
-              icon={<AudioLines />}
-              label={audioReady ? "Audio armed" : "Audio off"}
-            />
-            <StatusPill active={handCount === 2} icon={<Hand />} label={`${handCount}/2 hands`} />
-          </section>
-
           <section className="action-grid" aria-label="Performance actions">
             <Button
               variant="outline"
@@ -121,13 +108,12 @@ export function ControlPanel({
             </Tooltip>
           </section>
 
-          <Separator />
+          <section className="primary-meters" aria-label="Live meters">
+            <Meter label="Pitch" value={formatFrequency(frequency)} ratio={frequencyRatio(frequency, settings)} />
+            <Meter label="Volume" value={`${Math.round(gain * 100)}%`} ratio={gain} />
+          </section>
 
-          <section className="control-section" aria-label="Sound">
-            <div className="section-heading">
-              <SlidersHorizontal className="size-4" />
-              <span>Sound</span>
-            </div>
+          <section className="compact-fields" aria-label="Tone controls">
             <SelectRow
               label="Waveform"
               value={waveform}
@@ -144,58 +130,49 @@ export function ControlPanel({
             />
           </section>
 
-          <Separator />
-
-          <section className="control-section" aria-label="Response">
-            <div className="section-heading">
-              <Gauge className="size-4" />
-              <span>Response</span>
+          <details className="advanced-panel">
+            <summary>
+              <span>Fine tune</span>
+              <ChevronDown className="size-4" />
+            </summary>
+            <div className="advanced-content">
+              <SliderRow
+                label="Smoothing"
+                value={settings.smoothing}
+                min={0.15}
+                max={0.92}
+                step={0.01}
+                format={(value) => `${Math.round(value * 100)}%`}
+                onChange={(smoothing) => onSettingsChange({ ...settings, smoothing })}
+              />
+              <SliderRow
+                label="Sensitivity"
+                value={settings.sensitivity}
+                min={0.55}
+                max={1.65}
+                step={0.01}
+                format={(value) => value.toFixed(2)}
+                onChange={(sensitivity) => onSettingsChange({ ...settings, sensitivity })}
+              />
+              <SliderRow
+                label="Max note"
+                value={settings.maxFrequency}
+                min={880}
+                max={3520}
+                step={10}
+                format={formatFrequency}
+                onChange={(maxFrequency) => onSettingsChange({ ...settings, maxFrequency })}
+              />
+              <Meter label="Confidence" value={`${Math.round(confidence * 100)}%`} ratio={confidence} />
             </div>
-            <SliderRow
-              label="Smoothing"
-              value={settings.smoothing}
-              min={0.15}
-              max={0.92}
-              step={0.01}
-              format={(value) => `${Math.round(value * 100)}%`}
-              onChange={(smoothing) => onSettingsChange({ ...settings, smoothing })}
-            />
-            <SliderRow
-              label="Sensitivity"
-              value={settings.sensitivity}
-              min={0.55}
-              max={1.65}
-              step={0.01}
-              format={(value) => value.toFixed(2)}
-              onChange={(sensitivity) => onSettingsChange({ ...settings, sensitivity })}
-            />
-            <SliderRow
-              label="Max note"
-              value={settings.maxFrequency}
-              min={880}
-              max={3520}
-              step={10}
-              format={formatFrequency}
-              onChange={(maxFrequency) => onSettingsChange({ ...settings, maxFrequency })}
-            />
-          </section>
-
-          <Separator />
-
-          <section className="control-section" aria-label="Live meters">
-            <Meter label="Pitch" value={formatFrequency(frequency)} ratio={frequencyRatio(frequency, settings)} />
-            <Meter label="Volume" value={`${Math.round(gain * 100)}%`} ratio={gain} />
-            <Meter label="Confidence" value={`${Math.round(confidence * 100)}%`} ratio={confidence} />
-          </section>
-
-          <Separator />
+          </details>
 
           <section className="secondary-actions" aria-label="Calibration">
-            <Button variant="outline" size="lg" className="control-button justify-start" onClick={onOpenCalibration}>
+            <Button variant="outline" size="default" className="justify-start" onClick={onOpenCalibration}>
               <FlipHorizontal />
               Calibrate
             </Button>
-            <Button variant="outline" size="lg" className="control-button justify-start" onClick={onReset}>
+            <Button variant="ghost" size="default" className="justify-start" onClick={onReset}>
               <RefreshCcw />
               Reset
             </Button>
@@ -203,23 +180,6 @@ export function ControlPanel({
         </CardContent>
       </Card>
     </aside>
-  );
-}
-
-function StatusPill({
-  active,
-  icon,
-  label,
-}: {
-  active: boolean;
-  icon: React.ReactElement;
-  label: string;
-}) {
-  return (
-    <div className={active ? "status-pill active" : "status-pill"}>
-      {icon}
-      <span>{label}</span>
-    </div>
   );
 }
 
