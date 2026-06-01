@@ -1,4 +1,5 @@
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
+import { Play } from "lucide-react";
 import { ThereminSynth, type Waveform } from "../audio/ThereminSynth";
 import {
   DEFAULT_MAPPING_SETTINGS,
@@ -10,6 +11,15 @@ import {
 import { createCameraSession, type CameraSession } from "../vision/camera";
 import { BrowserHandLandmarker } from "../vision/handLandmarker";
 import type { VisionFrame } from "../vision/handTypes";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ControlPanel } from "./ControlPanel";
 import { renderOverlay } from "./OverlayCanvas";
 
@@ -26,6 +36,7 @@ const INITIAL_METRICS: LiveMetrics = {
 };
 
 const SPLIT_STORAGE_KEY = "vision-theremin-split-x-v3";
+const ONBOARDING_STORAGE_KEY = "vision-theremin-onboarding-seen-v1";
 
 export function App() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -46,6 +57,7 @@ export function App() {
   const [settings, setSettings] = useState<MappingSettings>(DEFAULT_MAPPING_SETTINGS);
   const [waveform, setWaveform] = useState<Waveform>("sine");
   const [splitX, setSplitX] = useState(loadSplitX);
+  const [showOnboarding, setShowOnboarding] = useState(shouldShowOnboarding);
 
   const startCamera = useCallback(async () => {
     setError(null);
@@ -154,6 +166,11 @@ export function App() {
     localStorage.setItem(SPLIT_STORAGE_KEY, String(value));
   }, []);
 
+  const dismissOnboarding = useCallback(() => {
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
+    setShowOnboarding(false);
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
@@ -225,10 +242,7 @@ export function App() {
         aria-label="Vision theremin performance surface"
       >
         <video ref={videoRef} className="camera-feed" playsInline muted />
-        <div className="zone-overlay" aria-hidden="true">
-          <span className="zone-label zone-label-volume">Volume</span>
-          <span className="zone-label zone-label-pitch">Pitch</span>
-        </div>
+        <div className="zone-overlay" aria-hidden="true" />
         <canvas ref={canvasRef} className="overlay-canvas" />
         <SplitLine value={splitX} onChange={updateSplit} />
         <ControlPanel
@@ -245,9 +259,61 @@ export function App() {
           onSettingsChange={updateSettings}
           onReset={resetInstrument}
         />
+        <OnboardingDialog
+          open={showOnboarding}
+          onDismiss={dismissOnboarding}
+          onOpenChange={(open) => {
+            if (!open) {
+              dismissOnboarding();
+            }
+          }}
+        />
         {error ? <div className="error-banner">{error}</div> : null}
       </section>
     </main>
+  );
+}
+
+function OnboardingDialog({
+  open,
+  onDismiss,
+  onOpenChange,
+}: {
+  open: boolean;
+  onDismiss: () => void;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="onboarding-dialog" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>Get started</DialogTitle>
+          <DialogDescription className="onboarding-copy">
+            Play sound in the air with two hands.
+          </DialogDescription>
+        </DialogHeader>
+        <ol className="onboarding-steps">
+          <li>
+            <span className="onboarding-step-number">1</span>
+            <span>Turn on Camera and Audio.</span>
+          </li>
+          <li>
+            <span className="onboarding-step-number">2</span>
+            <span>Use the left hand for loudness: raise it to get louder, lower it to fade out.</span>
+          </li>
+          <li>
+            <span className="onboarding-step-number">3</span>
+            <span>Use the right hand for pitch. Drag the divider if you want more room.</span>
+          </li>
+        </ol>
+        <DialogFooter>
+          <Button className="onboarding-action" onClick={onDismiss}>
+            <Play />
+            Start playing
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -378,6 +444,10 @@ function loadSplitX(): number {
 
   const parsed = Number(stored);
   return Number.isFinite(parsed) ? clampSplit(parsed) : DEFAULT_SPLIT_X;
+}
+
+function shouldShowOnboarding(): boolean {
+  return localStorage.getItem(ONBOARDING_STORAGE_KEY) !== "true";
 }
 
 function clampSplit(value: number): number {

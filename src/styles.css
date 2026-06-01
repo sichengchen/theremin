@@ -131,24 +131,6 @@ button:not(:disabled) {
     );
 }
 
-.zone-label {
-  position: absolute;
-  top: 24px;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.zone-label-volume {
-  left: 24px;
-}
-
-.zone-label-pitch {
-  left: min(calc(var(--split-x) + 24px), calc(100% - 92px));
-}
-
 .split-control {
   position: absolute;
   top: 0;
@@ -528,6 +510,78 @@ button:not(:disabled) {
   padding: 12px 14px;
   color: var(--foreground);
   backdrop-filter: blur(12px);
+}
+
+.onboarding-dialog {
+  max-width: min(420px, calc(100vw - 32px));
+  border: 1px solid var(--liquid-glass-edge);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.2), transparent 34%),
+    linear-gradient(145deg, var(--liquid-glass-fill-strong), rgba(220, 241, 246, 0.1) 52%),
+    rgba(7, 12, 14, 0.68);
+  color: var(--liquid-glass-text);
+  box-shadow:
+    inset 0 1px 0 var(--liquid-glass-highlight),
+    0 18px 52px var(--liquid-glass-shadow),
+    0 0 42px rgba(171, 222, 231, 0.16);
+  backdrop-filter: var(--liquid-glass-filter);
+  -webkit-backdrop-filter: var(--liquid-glass-filter);
+}
+
+.onboarding-dialog [data-slot="dialog-title"] {
+  color: var(--liquid-glass-text);
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.onboarding-copy {
+  color: var(--liquid-glass-text);
+}
+
+.onboarding-steps {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onboarding-steps li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  color: var(--liquid-glass-text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.onboarding-step-number {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid var(--liquid-glass-edge);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--liquid-glass-text);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.onboarding-action {
+  width: 100%;
+  border-color: var(--liquid-glass-edge);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(220, 241, 246, 0.8)),
+    #ffffff;
+  color: #071013;
+}
+
+.onboarding-action:hover {
+  background:
+    linear-gradient(145deg, #ffffff, rgba(220, 241, 246, 0.9)),
+    #ffffff;
 }
 
 @media (max-width: 640px) {
