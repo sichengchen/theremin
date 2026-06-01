@@ -418,7 +418,7 @@ button:not(:disabled) {
   font-variant-numeric: tabular-nums;
 }
 
-.fine-tune-trigger {
+.more-trigger {
   display: flex;
   min-height: 30px;
   cursor: pointer;
@@ -433,19 +433,40 @@ button:not(:disabled) {
   font-weight: 650;
 }
 
-.fine-tune-trigger svg {
-  transition: transform 120ms ease;
+.more-trigger svg {
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.fine-tune-panel[data-open] .fine-tune-trigger svg,
-.fine-tune-trigger[data-open] svg {
+.more-panel[data-open] .more-trigger svg,
+.more-trigger[data-open] svg {
   transform: rotate(180deg);
 }
 
-.fine-tune-content {
+.more-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  opacity: 0;
+  padding-top: 0;
+  transform: translateY(-4px);
+  transition:
+    grid-template-rows 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 160ms ease,
+    padding-top 160ms ease,
+    transform 160ms ease;
+}
+
+.more-content[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  padding-top: 8px;
+  transform: translateY(0);
+}
+
+.more-content-inner {
   display: grid;
   gap: 10px;
-  padding-top: 8px;
+  overflow: hidden;
 }
 
 .control-dock [data-slot="progress-track"],

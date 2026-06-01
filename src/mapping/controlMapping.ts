@@ -1,6 +1,8 @@
-import type { TrackedHand } from "../vision/handTypes";
+import type { Handedness, TrackedHand } from "../vision/handTypes";
 import { clamp, expSmooth, inverseLerp, logarithmicFrequency } from "./math";
 import { getGestureState } from "./gestures";
+
+export type InstrumentHand = Exclude<Handedness, "Unknown">;
 
 export interface MappingSettings {
   minFrequency: number;
@@ -10,6 +12,8 @@ export interface MappingSettings {
   sensitivity: number;
   vibratoDepth: number;
   vibratoRate: number;
+  volumeHand: InstrumentHand;
+  pitchHand: InstrumentHand;
 }
 
 export interface ControlState {
@@ -34,6 +38,8 @@ export const DEFAULT_MAPPING_SETTINGS: MappingSettings = {
   sensitivity: 1,
   vibratoDepth: 8,
   vibratoRate: 5.4,
+  volumeHand: "Left",
+  pitchHand: "Right",
 };
 
 export const DEFAULT_SPLIT_X = 1 / 3;
@@ -41,16 +47,17 @@ export const DEFAULT_SPLIT_X = 1 / 3;
 export function assignControlHands(
   hands: TrackedHand[],
   splitX = DEFAULT_SPLIT_X,
+  settings: Pick<MappingSettings, "volumeHand" | "pitchHand"> = DEFAULT_MAPPING_SETTINGS,
 ): Pick<ControlState, "pitchHand" | "volumeHand"> {
   if (hands.length === 0) {
     return { pitchHand: null, volumeHand: null };
   }
 
   const split = clamp(splitX, 0.18, 0.82);
-  const leftHands = hands.filter((hand) => hand.center.x < split);
-  const rightHands = hands.filter((hand) => hand.center.x >= split);
-  const volumeHand = pickMostStable(leftHands);
-  const pitchHand = pickMostStable(rightHands);
+  const volumeFallback = hands.filter((hand) => hand.handedness === "Unknown" && hand.center.x < split);
+  const pitchFallback = hands.filter((hand) => hand.handedness === "Unknown" && hand.center.x >= split);
+  const volumeHand = pickAssignedHand(hands, settings.volumeHand, volumeFallback);
+  const pitchHand = pickAssignedHand(hands, settings.pitchHand, pitchFallback, volumeHand);
 
   return {
     pitchHand,
@@ -65,7 +72,7 @@ export function mapHandsToControls(
   previous?: ControlState,
 ): ControlState {
   const split = clamp(splitX, 0.18, 0.82);
-  const { pitchHand, volumeHand } = assignControlHands(hands, split);
+  const { pitchHand, volumeHand } = assignControlHands(hands, split, settings);
   const rawPitch = pitchHand
     ? clamp(inverseLerp(split, 0.98, pitchHand.landmarks[8]?.x ?? pitchHand.center.x))
     : previous?.pitch01 ?? 0;
@@ -112,4 +119,17 @@ function pickMostStable(hands: TrackedHand[]): TrackedHand | null {
   }
 
   return [...hands].sort((a, b) => b.handednessScore - a.handednessScore)[0];
+}
+
+function pickAssignedHand(
+  hands: TrackedHand[],
+  preferred: InstrumentHand,
+  fallback: TrackedHand[],
+  excluded: TrackedHand | null = null,
+): TrackedHand | null {
+  const available = hands.filter((hand) => hand !== excluded);
+  return (
+    pickMostStable(available.filter((hand) => hand.handedness === preferred)) ??
+    pickMostStable(fallback.filter((hand) => available.includes(hand)))
+  );
 }

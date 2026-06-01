@@ -12,7 +12,7 @@ describe("control mapping", () => {
     expect(DEFAULT_SPLIT_X).toBe(1 / 3);
   });
 
-  it("assigns pitch and volume by split region", () => {
+  it("assigns pitch and volume by configured hand", () => {
     const left = handAt(0.2, 0.5, "Left");
     const right = handAt(0.8, 0.5, "Right");
 
@@ -20,12 +20,25 @@ describe("control mapping", () => {
     expect(assignControlHands([left, right], 0.5).volumeHand).toBe(left);
   });
 
-  it("assigns controls by region instead of handedness", () => {
+  it("keeps hand roles even when hands cross the split", () => {
     const rightHandOnLeft = handAt(0.2, 0.5, "Right");
     const leftHandOnRight = handAt(0.8, 0.5, "Left");
 
-    expect(assignControlHands([rightHandOnLeft, leftHandOnRight], 0.5).volumeHand).toBe(rightHandOnLeft);
-    expect(assignControlHands([rightHandOnLeft, leftHandOnRight], 0.5).pitchHand).toBe(leftHandOnRight);
+    expect(assignControlHands([rightHandOnLeft, leftHandOnRight], 0.5).volumeHand).toBe(leftHandOnRight);
+    expect(assignControlHands([rightHandOnLeft, leftHandOnRight], 0.5).pitchHand).toBe(rightHandOnLeft);
+  });
+
+  it("can swap hand roles", () => {
+    const left = handAt(0.2, 0.5, "Left");
+    const right = handAt(0.8, 0.5, "Right");
+    const swapped = {
+      ...DEFAULT_MAPPING_SETTINGS,
+      volumeHand: "Right" as const,
+      pitchHand: "Left" as const,
+    };
+
+    expect(assignControlHands([left, right], 0.5, swapped).volumeHand).toBe(right);
+    expect(assignControlHands([left, right], 0.5, swapped).pitchHand).toBe(left);
   });
 
   it("maps pitch logarithmically across the pitch region", () => {

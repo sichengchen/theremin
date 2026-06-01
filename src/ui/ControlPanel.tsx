@@ -14,11 +14,12 @@ import {
 } from "../audio/notes";
 import type { Waveform } from "../audio/ThereminSynth";
 import {
+  type InstrumentHand,
   type MappingSettings,
 } from "../mapping/controlMapping";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -41,6 +42,11 @@ export interface ControlPanelProps {
 }
 
 const WAVEFORMS: Waveform[] = ["sine", "triangle", "sawtooth", "square"];
+const HAND_ASSIGNMENTS = ["left-volume", "right-volume"] as const;
+const HAND_ASSIGNMENT_LABELS: Record<HandAssignment, string> = {
+  "left-volume": "Left vol / Right pitch",
+  "right-volume": "Right vol / Left pitch",
+};
 const LOWEST_PITCH_MIDI = 24;
 const HIGHEST_PITCH_MIDI = 108;
 const MIN_PITCH_SPAN = 1;
@@ -49,6 +55,7 @@ const CONTROL_DOCK_MARGIN = 16;
 
 type ControlCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 type DragMode = "idle" | "dragging" | "snapping";
+type HandAssignment = (typeof HAND_ASSIGNMENTS)[number];
 
 interface Position {
   x: number;
@@ -71,6 +78,7 @@ export function ControlPanel({
 }: ControlPanelProps) {
   const lowPitchMidi = frequencyToMidi(settings.minFrequency);
   const highPitchMidi = frequencyToMidi(settings.maxFrequency);
+  const handAssignment = getHandAssignment(settings);
   const dockRef = useRef<HTMLDivElement | null>(null);
   const dragOffsetRef = useRef<Position>({ x: 0, y: 0 });
   const dragPositionRef = useRef<Position | null>(null);
@@ -79,6 +87,7 @@ export function ControlPanel({
   const [corner, setCorner] = useState<ControlCorner>(loadControlCorner);
   const [dragMode, setDragMode] = useState<DragMode>("idle");
   const [dragPosition, setDragPositionState] = useState<Position | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const setDragPosition = useCallback((position: Position | null) => {
     dragPositionRef.current = position;
@@ -228,56 +237,77 @@ export function ControlPanel({
           options={WAVEFORMS}
         />
 
-        <Collapsible className="fine-tune-panel" defaultOpen={false}>
-          <CollapsibleTrigger className="fine-tune-trigger">
-            <span>Fine tune</span>
+        <Collapsible className="more-panel" open={moreOpen} onOpenChange={(open) => setMoreOpen(open)}>
+          <CollapsibleTrigger
+            className="more-trigger"
+            aria-controls="more-settings"
+            aria-expanded={moreOpen}
+            data-open={moreOpen ? "" : undefined}
+            onClick={() => setMoreOpen((open) => !open)}
+          >
+            <span>More</span>
             <ChevronDown className="size-4" />
           </CollapsibleTrigger>
-          <CollapsibleContent className="fine-tune-content">
-            <SliderRow
-              label="Smoothing"
-              value={settings.smoothing}
-              min={0.15}
-              max={0.92}
-              step={0.01}
-              format={(value) => `${Math.round(value * 100)}%`}
-              onChange={(smoothing) => onSettingsChange({ ...settings, smoothing })}
-            />
-            <SliderRow
-              label="Sensitivity"
-              value={settings.sensitivity}
-              min={0.55}
-              max={1.65}
-              step={0.01}
-              format={(value) => value.toFixed(2)}
-              onChange={(sensitivity) => onSettingsChange({ ...settings, sensitivity })}
-            />
-            <PitchLimitRow
-              label="Low note"
-              value={lowPitchMidi}
-              min={LOWEST_PITCH_MIDI}
-              max={HIGHEST_PITCH_MIDI}
-              onChange={(midi) =>
-                onSettingsChange({
-                  ...settings,
-                  minFrequency: midiToFrequency(Math.min(midi, highPitchMidi - MIN_PITCH_SPAN)),
-                })
-              }
-            />
-            <PitchLimitRow
-              label="High note"
-              value={highPitchMidi}
-              min={LOWEST_PITCH_MIDI}
-              max={HIGHEST_PITCH_MIDI}
-              onChange={(midi) =>
-                onSettingsChange({
-                  ...settings,
-                  maxFrequency: midiToFrequency(Math.max(midi, lowPitchMidi + MIN_PITCH_SPAN)),
-                })
-              }
-            />
-            <Meter label="Confidence" value={`${Math.round(confidence * 100)}%`} ratio={confidence} />
-          </CollapsibleContent>
+          <div id="more-settings" className="more-content" data-open={moreOpen ? "true" : undefined} aria-hidden={!moreOpen}>
+            <div className="more-content-inner">
+              <SelectRow
+                label="Hands"
+                value={handAssignment}
+                onValueChange={(value) =>
+                  onSettingsChange({
+                    ...settings,
+                    ...handSettingsForAssignment(value),
+                  })
+                }
+                options={HAND_ASSIGNMENTS}
+                optionLabels={HAND_ASSIGNMENT_LABELS}
+                triggerClassName="w-48 justify-between"
+              />
+              <SliderRow
+                label="Smoothing"
+                value={settings.smoothing}
+                min={0.15}
+                max={0.92}
+                step={0.01}
+                format={(value) => `${Math.round(value * 100)}%`}
+                onChange={(smoothing) => onSettingsChange({ ...settings, smoothing })}
+              />
+              <SliderRow
+                label="Sensitivity"
+                value={settings.sensitivity}
+                min={0.55}
+                max={1.65}
+                step={0.01}
+                format={(value) => value.toFixed(2)}
+                onChange={(sensitivity) => onSettingsChange({ ...settings, sensitivity })}
+              />
+              <PitchLimitRow
+                label="Low note"
+                value={lowPitchMidi}
+                min={LOWEST_PITCH_MIDI}
+                max={HIGHEST_PITCH_MIDI}
+                onChange={(midi) =>
+                  onSettingsChange({
+                    ...settings,
+                    minFrequency: midiToFrequency(Math.min(midi, highPitchMidi - MIN_PITCH_SPAN)),
+                  })
+                }
+              />
+              <PitchLimitRow
+                label="High note"
+                value={highPitchMidi}
+                min={LOWEST_PITCH_MIDI}
+                max={HIGHEST_PITCH_MIDI}
+                onChange={(midi) =>
+                  onSettingsChange({
+                    ...settings,
+                    maxFrequency: midiToFrequency(Math.max(midi, lowPitchMidi + MIN_PITCH_SPAN)),
+                  })
+                }
+              />
+              <Meter label="Confidence" value={`${Math.round(confidence * 100)}%`} ratio={confidence} />
+            </div>
+          </div>
         </Collapsible>
       </CardContent>
     </Card>
@@ -309,24 +339,28 @@ function SelectRow<TValue extends string>({
   label,
   value,
   options,
+  optionLabels,
+  triggerClassName = "w-36 justify-between",
   onValueChange,
 }: {
   label: string;
   value: TValue;
   options: readonly TValue[];
+  optionLabels?: Partial<Record<TValue, string>>;
+  triggerClassName?: string;
   onValueChange: (value: TValue) => void;
 }) {
   return (
     <div className="select-row">
       <Label>{label}</Label>
       <Select value={value} onValueChange={(next) => onValueChange(next as TValue)}>
-        <SelectTrigger className="w-36 justify-between" aria-label={label}>
-          <SelectValue />
+        <SelectTrigger className={triggerClassName} aria-label={label}>
+          <SelectValue>{(selected) => optionLabels?.[selected as TValue] ?? selected}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
             <SelectItem key={option} value={option}>
-              <span className="capitalize">{option}</span>
+              <span>{optionLabels?.[option] ?? option}</span>
             </SelectItem>
           ))}
         </SelectContent>
@@ -407,6 +441,16 @@ function Meter({ label, value, ratio }: { label: string; value: string; ratio: n
       <Progress value={Math.max(0, Math.min(1, ratio)) * 100} />
     </div>
   );
+}
+
+function getHandAssignment(settings: Pick<MappingSettings, "volumeHand" | "pitchHand">): HandAssignment {
+  return settings.volumeHand === "Right" && settings.pitchHand === "Left" ? "right-volume" : "left-volume";
+}
+
+function handSettingsForAssignment(value: HandAssignment): { volumeHand: InstrumentHand; pitchHand: InstrumentHand } {
+  return value === "right-volume"
+    ? { volumeHand: "Right", pitchHand: "Left" }
+    : { volumeHand: "Left", pitchHand: "Right" };
 }
 
 function frequencyRatio(value: number, settings: MappingSettings): number {
