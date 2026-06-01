@@ -139,7 +139,7 @@ button:not(:disabled) {
 .control-rail {
   display: flex;
   min-height: 100vh;
-  align-items: stretch;
+  align-items: flex-start;
   justify-content: center;
   border-left: 1px solid var(--border);
   background: color-mix(in oklch, var(--background), black 3%);
@@ -248,11 +248,13 @@ button:not(:disabled) {
   background: color-mix(in oklch, var(--card), black 3%);
 }
 
-.advanced-panel summary {
+.advanced-trigger {
   display: flex;
   min-height: 38px;
   cursor: pointer;
-  list-style: none;
+  width: 100%;
+  border: 0;
+  background: transparent;
   align-items: center;
   justify-content: space-between;
   padding: 0 10px;
@@ -261,15 +263,12 @@ button:not(:disabled) {
   font-weight: 650;
 }
 
-.advanced-panel summary::-webkit-details-marker {
-  display: none;
-}
-
-.advanced-panel summary svg {
+.advanced-trigger svg {
   transition: transform 120ms ease;
 }
 
-.advanced-panel[open] summary svg {
+.advanced-panel[data-open] .advanced-trigger svg,
+.advanced-trigger[data-open] svg {
   transform: rotate(180deg);
 }
 

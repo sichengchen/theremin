@@ -15,6 +15,7 @@ import {
 } from "../mapping/controlMapping";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -130,12 +131,12 @@ export function ControlPanel({
             />
           </section>
 
-          <details className="advanced-panel">
-            <summary>
+          <Collapsible className="advanced-panel">
+            <CollapsibleTrigger className="advanced-trigger">
               <span>Fine tune</span>
               <ChevronDown className="size-4" />
-            </summary>
-            <div className="advanced-content">
+            </CollapsibleTrigger>
+            <CollapsibleContent className="advanced-content">
               <SliderRow
                 label="Smoothing"
                 value={settings.smoothing}
@@ -164,8 +165,8 @@ export function ControlPanel({
                 onChange={(maxFrequency) => onSettingsChange({ ...settings, maxFrequency })}
               />
               <Meter label="Confidence" value={`${Math.round(confidence * 100)}%`} ratio={confidence} />
-            </div>
-          </details>
+            </CollapsibleContent>
+          </Collapsible>
 
           <section className="secondary-actions" aria-label="Calibration">
             <Button variant="outline" size="default" className="justify-start" onClick={onOpenCalibration}>

@@ -48,12 +48,12 @@ export function renderOverlay(
 
   context.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
   context.clearRect(0, 0, rect.width, rect.height);
-  drawZones(context, rect.width, rect.height, calibration, control);
-
   if (!frame) {
     drawCenteredText(context, rect.width, rect.height, "Start camera to play");
     return;
   }
+
+  drawZones(context, rect.width, rect.height, calibration, control);
 
   for (const hand of frame.hands) {
     const isPitch = control?.pitchHand === hand;
