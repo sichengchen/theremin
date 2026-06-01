@@ -179,10 +179,24 @@ button:not(:disabled) {
   padding: 16px;
 }
 
-.action-grid {
+.switch-stack {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   gap: 8px;
+}
+
+.switch-row {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid color-mix(in oklch, var(--border), transparent 24%);
+  border-radius: var(--radius-md);
+  padding: 0 10px;
+}
+
+.switch-row[data-disabled="true"] {
+  color: var(--muted-foreground);
 }
 
 .primary-meters,
@@ -373,7 +387,6 @@ button:not(:disabled) {
     padding: 14px;
   }
 
-  .action-grid,
   .secondary-actions {
     grid-template-columns: 1fr;
   }

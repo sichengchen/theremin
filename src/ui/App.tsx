@@ -105,6 +105,49 @@ export function App() {
     }
   }, [settings, waveform]);
 
+  const stopCamera = useCallback(() => {
+    cameraRef.current?.stop();
+    cameraRef.current = null;
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.srcObject = null;
+    }
+    frameRef.current = null;
+    controlRef.current = null;
+    setCameraReady(false);
+    setMetrics(INITIAL_METRICS);
+  }, []);
+
+  const setCameraEnabled = useCallback(
+    (enabled: boolean) => {
+      if (enabled) {
+        void startCamera();
+      } else {
+        stopCamera();
+      }
+    },
+    [startCamera, stopCamera],
+  );
+
+  const stopAudio = useCallback(() => {
+    const synth = synthRef.current;
+    synthRef.current = null;
+    setAudioReady(false);
+    setMuted(false);
+    void synth?.shutdown();
+  }, []);
+
+  const setAudioEnabled = useCallback(
+    (enabled: boolean) => {
+      if (enabled) {
+        void startAudio();
+      } else {
+        stopAudio();
+      }
+    },
+    [startAudio, stopAudio],
+  );
+
   const updateSettings = useCallback((next: MappingSettings) => {
     setSettings(next);
     synthRef.current?.applySettings(next);
@@ -115,12 +158,9 @@ export function App() {
     synthRef.current?.setTone({ waveform: next });
   }, []);
 
-  const toggleMute = useCallback(() => {
-    setMuted((current) => {
-      const next = !current;
-      synthRef.current?.setMuted(next);
-      return next;
-    });
+  const setMuteEnabled = useCallback((next: boolean) => {
+    setMuted(next);
+    synthRef.current?.setMuted(next);
   }, []);
 
   const resetInstrument = useCallback(() => {
@@ -269,9 +309,9 @@ export function App() {
           frequency={metrics.frequency}
           gain={metrics.gain}
           confidence={metrics.confidence}
-          onStartCamera={startCamera}
-          onStartAudio={startAudio}
-          onToggleMute={toggleMute}
+          onCameraChange={setCameraEnabled}
+          onAudioChange={setAudioEnabled}
+          onMuteChange={setMuteEnabled}
           onWaveformChange={updateWaveform}
           onSettingsChange={updateSettings}
           onOpenCalibration={() => {

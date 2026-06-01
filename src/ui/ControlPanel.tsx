@@ -1,11 +1,7 @@
 import {
-  Camera,
   ChevronDown,
   FlipHorizontal,
-  Play,
   RefreshCcw,
-  Volume2,
-  VolumeX,
 } from "lucide-react";
 import type { Waveform } from "../audio/ThereminSynth";
 import {
@@ -16,10 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Switch } from "@/components/ui/switch";
 
 export interface ControlPanelProps {
   cameraReady: boolean;
@@ -31,9 +28,9 @@ export interface ControlPanelProps {
   frequency: number;
   gain: number;
   confidence: number;
-  onStartCamera: () => void;
-  onStartAudio: () => void;
-  onToggleMute: () => void;
+  onCameraChange: (enabled: boolean) => void;
+  onAudioChange: (enabled: boolean) => void;
+  onMuteChange: (muted: boolean) => void;
   onWaveformChange: (waveform: Waveform) => void;
   onSettingsChange: (settings: MappingSettings) => void;
   onOpenCalibration: () => void;
@@ -52,9 +49,9 @@ export function ControlPanel({
   frequency,
   gain,
   confidence,
-  onStartCamera,
-  onStartAudio,
-  onToggleMute,
+  onCameraChange,
+  onAudioChange,
+  onMuteChange,
   onWaveformChange,
   onSettingsChange,
   onOpenCalibration,
@@ -71,36 +68,10 @@ export function ControlPanel({
         </CardHeader>
 
         <CardContent className="instrument-panel-content">
-          <section className="action-grid" aria-label="Performance actions">
-            <Button
-              variant="outline"
-              size="lg"
-              className="control-button"
-              onClick={onStartCamera}
-              disabled={cameraReady}
-            >
-              <Camera />
-              {cameraReady ? "Camera ready" : "Start camera"}
-            </Button>
-            <Button size="lg" className="control-button" onClick={onStartAudio} disabled={audioReady}>
-              <Play />
-              {audioReady ? "Audio armed" : "Arm audio"}
-            </Button>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="icon-lg"
-                    aria-label={muted ? "Unmute" : "Mute"}
-                    onClick={onToggleMute}
-                  />
-                }
-              >
-                {muted ? <VolumeX /> : <Volume2 />}
-              </TooltipTrigger>
-              <TooltipContent side="left">{muted ? "Unmute" : "Mute"}</TooltipContent>
-            </Tooltip>
+          <section className="switch-stack" aria-label="Performance toggles">
+            <SwitchRow label="Camera" checked={cameraReady} onCheckedChange={onCameraChange} />
+            <SwitchRow label="Audio" checked={audioReady} onCheckedChange={onAudioChange} />
+            <SwitchRow label="Mute" checked={muted} disabled={!audioReady} onCheckedChange={onMuteChange} />
           </section>
 
           <section className="primary-meters" aria-label="Live meters">
@@ -175,6 +146,27 @@ export function ControlPanel({
         </CardContent>
       </Card>
     </aside>
+  );
+}
+
+function SwitchRow({
+  label,
+  checked,
+  disabled,
+  onCheckedChange,
+}: {
+  label: string;
+  checked: boolean;
+  disabled?: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  const id = `control-${label.toLowerCase()}`;
+
+  return (
+    <div className="switch-row" data-disabled={disabled ? "true" : undefined}>
+      <Label htmlFor={id}>{label}</Label>
+      <Switch id={id} checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
+    </div>
   );
 }
 
